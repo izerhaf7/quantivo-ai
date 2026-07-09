@@ -27,6 +27,7 @@ from contracts import (
     ScopeConfig,
     SourceType,
     Location,
+    IndustryCategory,
 )
 
 logger = logging.getLogger(__name__)
@@ -96,7 +97,7 @@ class BpsModule:
 
         for dataset in datasets[:2]:  # Cap at 2 datasets
             try:
-                data = await self._fetch_dataset(dataset, loc)
+                data = await self._fetch_dataset(dataset, loc, inp.category)
                 if data:
                     items.append(self._make_item(scope, dataset, data, loc))
             except Exception as e:  # noqa: BLE001
@@ -111,7 +112,7 @@ class BpsModule:
         retry=retry_if_exception_type(httpx.RequestError),
         reraise=True,
     )
-    async def _fetch_dataset(self, dataset: str, loc: Location) -> Optional[dict]:
+    async def _fetch_dataset(self, dataset: str, loc: Location, category: "IndustryCategory | None" = None) -> Optional[dict]:
         """Fetch a specific BPS dataset with geographic filtering."""
         # BPS API uses different endpoints per dataset
         # This is a simplified implementation - actual API needs dataset-specific params
@@ -123,7 +124,7 @@ class BpsModule:
         elif dataset == "produksi_kopi":
             return await self._fetch_produksi_kopi(loc)
         elif dataset == "badan_usaha":
-            return await self._fetch_badan_usaha(loc)
+            return await self._fetch_badan_usaha(loc, category)
         else:
             # Generic fallback
             return await self._fetch_generic(dataset, loc)
@@ -170,7 +171,7 @@ class BpsModule:
         resp.raise_for_status()
         return resp.json()
 
-    async def _fetch_badan_usaha(self, loc: Location) -> Optional[dict]:
+    async def _fetch_badan_usaha(self, loc: Location, category: "IndustryCategory | None" = None) -> Optional[dict]:
         """Fetch number of businesses by sector."""
         params = {
             "key": self.api_key,
@@ -178,7 +179,7 @@ class BpsModule:
             "var": "jumlah_badan_usaha",
             "wilayah": self._get_wilayah_code(loc),
             "tahun": "2023",
-            "sektor": self._get_sektor_code(loc),
+            "sektor": self._get_sektor_code(category),
         }
 
         resp = await self.client.get(f"{BPS_BASE}/data", params=params)
@@ -228,8 +229,8 @@ class BpsModule:
         # Try city-level (would need more detailed mapping)
         return "00"  # National level fallback
 
-    def _get_sektor_code(self, loc: Location) -> str:
-        """Map category to BPS sector code (KBLI)."""
+    def _get_sektor_code(self, category: "IndustryCategory | None" = None) -> str:
+        """Map IndustryCategory to BPS sector code (KBLI)."""
         sector_map = {
             "food_beverage": "56",  # Jasa Makanan dan Minuman
             "retail": "47",         # Perdagangan Eceran
@@ -239,7 +240,9 @@ class BpsModule:
             "health": "86",         # Kesehatan
             "education": "85",      # Pendidikan
         }
-        return sector_map.get(loc.category.value if hasattr(loc, 'category') else "", "96")
+        if category is None:
+            return "96"
+        return sector_map.get(category.value, "96")
 
     def _make_item(self, scope: ScopeConfig, dataset: str, data: dict, loc: Location) -> RawDataItem:
         """Convert BPS response to RawDataItem."""
