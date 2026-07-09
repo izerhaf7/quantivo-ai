@@ -9,6 +9,7 @@ dependencies = [
     "httpx>=0.28",
     "langgraph>=1.2.8",
     "qdrant-client>=1.11",
+    "tenacity>=9.1.4",
 ]
 
 [tool.uv]
