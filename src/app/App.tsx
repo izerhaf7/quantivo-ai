@@ -4,7 +4,11 @@ import {
   Search, LogOut, Lock, Eye, EyeOff, CheckCircle2,
   TrendingUp, Download, BarChart2, MapPin, FileText,
   ChevronDown, Shield, Zap, Crown, Sparkles,
+<<<<<<< HEAD
   AlertTriangle, ArrowRight, ArrowLeft, Phone, Mail,
+=======
+  AlertTriangle, ArrowRight, Phone, Mail,
+>>>>>>> b14d655d27d9ac5bfc069faf5fc6e9ec08f9ac43
   Building2, Users, Activity, Target,
   Globe, Layers, RefreshCw, Star, Menu, X,
 } from "lucide-react";
@@ -13,7 +17,10 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
+<<<<<<< HEAD
 import { BusinessmanIllustration } from "@/app/components/BusinessmanIllustration";
+=======
+>>>>>>> b14d655d27d9ac5bfc069faf5fc6e9ec08f9ac43
 import CLogoImg from "@/imports/C-Logo-1.png";
 import ConsultinLogo from "@/imports/Consultin_1-1.png";
 
@@ -217,7 +224,11 @@ function Sidebar({ active, onNavigate, analysisCount }: {
 
       {/* Nav */}
       <nav className="flex-1 px-2 lg:px-3 py-4 space-y-0.5">
+<<<<<<< HEAD
         {NAV_ITEMS.filter(item => item.id !== "account").map(({ id, Icon, label }) => {
+=======
+        {NAV_ITEMS.map(({ id, Icon, label }) => {
+>>>>>>> b14d655d27d9ac5bfc069faf5fc6e9ec08f9ac43
           const on = id === "home" ? isHomeActive(active) : active === id;
           return (
             <button
@@ -251,6 +262,7 @@ function Sidebar({ active, onNavigate, analysisCount }: {
             Upgrade ke Pro →
           </button>
         </div>
+<<<<<<< HEAD
         <button
           onClick={() => onNavigate("account")}
           className={cn(
@@ -260,14 +272,24 @@ function Sidebar({ active, onNavigate, analysisCount }: {
               : "text-white/45 hover:text-white/75 hover:bg-white/[0.04]"
           )}
         >
+=======
+        <div className="flex items-center gap-2.5 px-1 lg:px-2 py-1">
+>>>>>>> b14d655d27d9ac5bfc069faf5fc6e9ec08f9ac43
           <div className="w-7 h-7 rounded-full bg-gradient-to-b from-[#2A74C4] to-[#14385E] flex items-center justify-center shrink-0">
             <User size={13} className="text-white" />
           </div>
           <div className="hidden lg:flex flex-col min-w-0">
+<<<<<<< HEAD
             <span className={cn("text-[12px] font-semibold font-['Inter'] truncate", active === "account" ? "text-white" : "text-white/80")}>CEO Account</span>
             <span className="text-white/35 text-[10px] font-['Inter'] truncate">free@consultin.id</span>
           </div>
         </button>
+=======
+            <span className="text-white/80 text-[12px] font-semibold font-['Inter'] truncate">CEO Account</span>
+            <span className="text-white/35 text-[10px] font-['Inter'] truncate">free@consultin.id</span>
+          </div>
+        </div>
+>>>>>>> b14d655d27d9ac5bfc069faf5fc6e9ec08f9ac43
       </div>
     </aside>
   );
@@ -330,6 +352,7 @@ function SplashView() {
 // ─── Onboarding ───────────────────────────────────────────────────────────────
 const OB_SLIDES = [
   {
+<<<<<<< HEAD
     title: "Ever Think About Great Business Ideas?",
     sub: "Don't know where to develop these ideas?",
   },
@@ -340,12 +363,37 @@ const OB_SLIDES = [
   {
     title: "Gain Profit with Strategic Plan",
     sub: "AI Agent will give you the best strategy and make u the great businessman.",
+=======
+    Icon: Activity,
+    color: "#2A74C4",
+    title: "AI Agent Pipeline",
+    sub: "4 agen AI bekerja serial secara otomatis",
+    body: "Scraping → Analisis Sentimen → SWOT Generation → Executive Summary. Didukung AMD MI300X GPU 192GB HBM3 dan model Qwen3-235B.",
+    stats: [{ label: "Waktu Proses", val: "< 3 menit" }, { label: "Data Sources", val: "1.000+" }, { label: "Model Params", val: "235B" }],
+  },
+  {
+    Icon: FileText,
+    color: "#7C3AED",
+    title: "Laporan Gaya McKinsey",
+    sub: "Framework SCR: Situation – Complication – Resolution",
+    body: "Output terstruktur mengikuti metodologi konsultan top: situational analysis, SWOT, competitive landscape, strategic priorities, dan risk matrix.",
+    stats: [{ label: "Seksi Laporan", val: "9 modul" }, { label: "Slide Template", val: "10 slides" }, { label: "Framework", val: "SWOT + 5F" }],
+  },
+  {
+    Icon: TrendingUp,
+    color: "#0B7A6A",
+    title: "Keputusan Lebih Cerdas",
+    sub: "Insight berbasis data untuk CEO UMKM Indonesia",
+    body: "Dari warung makan hingga toko online — Consultin membantu Anda memahami pasar, mengantisipasi risiko, dan bersaing lebih efektif.",
+    stats: [{ label: "Akurasi Sentimen", val: "94.2%" }, { label: "UMKM Terbantu", val: "2.800+" }, { label: "Avg ROI", val: "+127%" }],
+>>>>>>> b14d655d27d9ac5bfc069faf5fc6e9ec08f9ac43
   },
 ];
 
 function OnboardingView({ onFinish }: { onFinish: () => void }) {
   const [slide, setSlide] = useState(0);
   const s = OB_SLIDES[slide];
+<<<<<<< HEAD
 
   return (
     <div className="min-h-screen bg-[#F4F6F8] flex items-center justify-center p-0 sm:p-6 font-['Plus_Jakarta_Sans',sans-serif]">
@@ -424,6 +472,63 @@ function OnboardingView({ onFinish }: { onFinish: () => void }) {
           </div>
         </div>
 
+=======
+  const Icon = s.Icon;
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
+      <div className="w-full max-w-2xl">
+        {/* Progress dots */}
+        <div className="flex justify-center gap-2 mb-10">
+          {OB_SLIDES.map((_, i) => (
+            <button key={i} onClick={() => setSlide(i)}
+              className={cn("h-1.5 rounded-full transition-all", i === slide ? "w-8 bg-[#2A74C4]" : "w-1.5 bg-border")} />
+          ))}
+        </div>
+
+        {/* Slide card */}
+        <div className="bg-card rounded-2xl border border-border p-10 shadow-sm mb-6">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${s.color}18`, border: `1px solid ${s.color}30` }}>
+              <Icon size={22} style={{ color: s.color }} />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold font-['Plus_Jakarta_Sans'] text-foreground leading-tight">{s.title}</h2>
+              <p className="text-muted-foreground text-sm font-['Inter']">{s.sub}</p>
+            </div>
+          </div>
+          <p className="text-[15px] font-['Inter'] text-foreground/80 leading-relaxed mb-8">{s.body}</p>
+          <div className="grid grid-cols-3 gap-4">
+            {s.stats.map(({ label, val }) => (
+              <div key={label} className="bg-background rounded-xl p-3.5 border border-border text-center">
+                <p className="text-lg font-bold font-['JetBrains_Mono'] text-foreground">{val}</p>
+                <p className="text-[11px] text-muted-foreground font-['Inter'] mt-0.5">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Controls */}
+        <div className="flex items-center justify-between gap-4">
+          <button onClick={onFinish} className="text-sm text-muted-foreground font-['Inter'] hover:text-foreground transition-colors px-2">
+            Lewati
+          </button>
+          <div className="flex gap-3">
+            {slide > 0 && (
+              <button onClick={() => setSlide(slide - 1)}
+                className="px-5 py-2.5 rounded-xl border border-border text-sm font-['Inter'] font-medium text-foreground hover:bg-muted transition-all">
+                Kembali
+              </button>
+            )}
+            <button
+              onClick={() => slide < OB_SLIDES.length - 1 ? setSlide(slide + 1) : onFinish()}
+              className="px-6 py-2.5 rounded-xl bg-[#0D1829] text-white text-sm font-['Inter'] font-semibold hover:bg-[#1a2d4a] transition-all flex items-center gap-2">
+              {slide < OB_SLIDES.length - 1 ? "Lanjut" : "Mulai Sekarang"}
+              <ArrowRight size={15} />
+            </button>
+          </div>
+        </div>
+>>>>>>> b14d655d27d9ac5bfc069faf5fc6e9ec08f9ac43
       </div>
     </div>
   );
@@ -438,7 +543,11 @@ function LoginView({ onLogin, onSignup, onForgot }: {
   const [showPass, setShowPass] = useState(false);
 
   return (
+<<<<<<< HEAD
     <AuthSplit title="Masuk ke Akun" subtitle="Selamat datang kembali, CEO">
+=======
+    <AuthSplit title="Masuk ke Akun" subtitle="Selamat datang kembali, CEO 👋">
+>>>>>>> b14d655d27d9ac5bfc069faf5fc6e9ec08f9ac43
       <div className="space-y-4">
         <InputField icon={Mail} placeholder="Email" value={email} onChange={setEmail} />
         <InputField
@@ -462,6 +571,7 @@ function LoginView({ onLogin, onSignup, onForgot }: {
           <div className="flex-1 h-px bg-border" />
         </div>
         <div className="grid grid-cols-2 gap-3">
+<<<<<<< HEAD
           <button className="py-3 rounded-xl border border-gray-200/80 bg-white text-[13px] font-['Inter'] font-semibold text-[#374151] hover:bg-gray-50 active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 shadow-xs cursor-pointer">
             <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -475,6 +585,18 @@ function LoginView({ onLogin, onSignup, onForgot }: {
             <svg className="w-4.5 h-4.5 text-[#1877F2] shrink-0" fill="currentColor" viewBox="0 0 24 24">
               <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
             </svg>
+=======
+          <button className="py-3 rounded-xl border border-border text-[13px] font-['Inter'] font-medium text-foreground hover:bg-muted/50 transition-all flex items-center justify-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-[rgba(212,70,56,0.2)] flex items-center justify-center">
+              <div className="w-2 h-2 rounded-full bg-[#d44638]" />
+            </div>
+            Google
+          </button>
+          <button className="py-3 rounded-xl border border-border text-[13px] font-['Inter'] font-medium text-foreground hover:bg-muted/50 transition-all flex items-center justify-center gap-2">
+            <div className="w-4 h-4 rounded bg-[#4267b2] flex items-center justify-center">
+              <span className="text-white text-[9px] font-bold">f</span>
+            </div>
+>>>>>>> b14d655d27d9ac5bfc069faf5fc6e9ec08f9ac43
             Facebook
           </button>
         </div>
@@ -517,6 +639,7 @@ function SignupView({ onRegister, onSignIn }: { onRegister: () => void; onSignIn
           <div className="flex-1 h-px bg-border" />
         </div>
         <div className="grid grid-cols-2 gap-3">
+<<<<<<< HEAD
           <button className="py-3 rounded-xl border border-gray-200/80 bg-white text-[13px] font-['Inter'] font-semibold text-[#374151] hover:bg-gray-50 active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 shadow-xs cursor-pointer">
             <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -530,6 +653,18 @@ function SignupView({ onRegister, onSignIn }: { onRegister: () => void; onSignIn
             <svg className="w-4.5 h-4.5 text-[#1877F2] shrink-0" fill="currentColor" viewBox="0 0 24 24">
               <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
             </svg>
+=======
+          <button className="py-3 rounded-xl border border-border text-[13px] font-['Inter'] font-medium text-foreground hover:bg-muted/50 transition-all flex items-center justify-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-[rgba(212,70,56,0.15)] flex items-center justify-center">
+              <div className="w-2 h-2 rounded-full bg-[#d44638]" />
+            </div>
+            Google
+          </button>
+          <button className="py-3 rounded-xl border border-border text-[13px] font-['Inter'] font-medium text-foreground hover:bg-muted/50 transition-all flex items-center justify-center gap-2">
+            <div className="w-4 h-4 rounded bg-[#4267b2] flex items-center justify-center">
+              <span className="text-white text-[9px] font-bold">f</span>
+            </div>
+>>>>>>> b14d655d27d9ac5bfc069faf5fc6e9ec08f9ac43
             Facebook
           </button>
         </div>
@@ -552,10 +687,14 @@ function PhoneNumberView({ onVerify, onLater }: { onVerify: () => void; onLater:
       <div className="space-y-4">
         <div className="flex gap-2">
           <div className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-3 shrink-0">
+<<<<<<< HEAD
             <div className="w-5 h-3.5 flex flex-col rounded-[2px] overflow-hidden border border-gray-200 shrink-0">
               <div className="bg-red-600 flex-1" />
               <div className="bg-white flex-1" />
             </div>
+=======
+            <span className="text-base">🇮🇩</span>
+>>>>>>> b14d655d27d9ac5bfc069faf5fc6e9ec08f9ac43
             <span className="text-sm font-['Inter'] text-foreground font-medium">+62</span>
             <ChevronDown size={14} className="text-muted-foreground" />
           </div>
@@ -740,7 +879,11 @@ function HomeView({ onSubmit, analysisCount }: { onSubmit: (q: string) => void; 
         {/* Greeting */}
         <div className="mb-8">
           <h1 className="text-2xl md:text-3xl font-bold font-['Plus_Jakarta_Sans'] text-foreground mb-1.5">
+<<<<<<< HEAD
             Halo, CEO!
+=======
+            Halo, CEO! 👋
+>>>>>>> b14d655d27d9ac5bfc069faf5fc6e9ec08f9ac43
           </h1>
           <p className="text-muted-foreground font-['Inter']">Ingin analisis bisnis apa hari ini?</p>
         </div>
@@ -1848,6 +1991,7 @@ function HistoryView({ onNavigate, onOpenReport }: { onNavigate: (s: Screen) => 
 // ─── Account ─────────────────────────────────────────────────────────────────
 const TIERS = [
   {
+<<<<<<< HEAD
     id: "free", name: "Free", price: "Rp 0", period: "/bulan",
     Icon: ({ color }: { color: string }) => (
       <svg className="w-5 h-5 stroke-[1.75]" style={{ color }} viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -1856,10 +2000,14 @@ const TIERS = [
       </svg>
     ),
     color: "#64748B",
+=======
+    id: "free", name: "Free", price: "Rp 0", period: "/bulan", Icon: Shield, color: "#64748B",
+>>>>>>> b14d655d27d9ac5bfc069faf5fc6e9ec08f9ac43
     features: ["3 analisis/bulan", "Laporan ringkas", "Ekspor PNG", "Support email"],
     cta: "Paket Aktif", active: true,
   },
   {
+<<<<<<< HEAD
     id: "pro", name: "Pro", price: "Rp 199K", period: "/bulan",
     Icon: ({ color }: { color: string }) => (
       <svg className="w-5 h-5 stroke-[1.75]" style={{ color }} viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -1870,10 +2018,14 @@ const TIERS = [
       </svg>
     ),
     color: "#2A74C4",
+=======
+    id: "pro", name: "Pro", price: "Rp 199K", period: "/bulan", Icon: Zap, color: "#2A74C4",
+>>>>>>> b14d655d27d9ac5bfc069faf5fc6e9ec08f9ac43
     features: ["30 analisis/bulan", "Full McKinsey Report", "Slide Deck export", "API access", "Priority support"],
     cta: "Upgrade ke Pro", active: false,
   },
   {
+<<<<<<< HEAD
     id: "agency", name: "Agency", price: "Rp 699K", period: "/bulan",
     Icon: ({ color }: { color: string }) => (
       <svg className="w-5 h-5 stroke-[1.75]" style={{ color }} viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -1883,6 +2035,9 @@ const TIERS = [
       </svg>
     ),
     color: "#7C3AED",
+=======
+    id: "agency", name: "Agency", price: "Rp 699K", period: "/bulan", Icon: Crown, color: "#7C3AED",
+>>>>>>> b14d655d27d9ac5bfc069faf5fc6e9ec08f9ac43
     features: ["Unlimited analisis", "Multi-user (5 seat)", "White-label report", "Custom AI fine-tuning", "Dedicated AM"],
     cta: "Hubungi Sales", active: false,
   },
@@ -1945,7 +2100,11 @@ function AccountView({ onLogout }: { onLogout: () => void }) {
                 "border-border hover:border-[#7C3AED]/40")}>
               <div className="flex items-center gap-3 mb-5">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${color}15`, border: `1px solid ${color}25` }}>
+<<<<<<< HEAD
                   <Icon color={color} />
+=======
+                  <Icon size={19} style={{ color }} />
+>>>>>>> b14d655d27d9ac5bfc069faf5fc6e9ec08f9ac43
                 </div>
                 <div>
                   <p className="font-bold font-['Plus_Jakarta_Sans'] text-foreground text-[15px]">{name}</p>
