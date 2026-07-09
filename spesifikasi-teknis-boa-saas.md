@@ -1,294 +1,233 @@
-# Spesifikasi Teknis — Business Opportunity Analysis (BOA) SaaS
-**Proyek:** AMD Developer Hackathon: ACT II — Track Unicorn
-**Versi:** 1.0 (Draft Realistis Pasca-Review)
-**Tanggal:** 8 Juli 2026
+# Rencana Teknis & Kontrak Paralel — BOA SaaS
+**AMD Developer Hackathon: ACT II — Track Unicorn**
+**Versi 1.1** · pendamping untuk `spesifikasi-teknis-boa-saas.md`.
+Fokus: **stack konkret + desain form konteks + kontrak antar-domain** supaya Indra, Izerhaf, Razan, dan Faiz bisa jalan paralel dari Jam-0.
+
+> **Perubahan v1.1:** `BusinessInput` diperluas jadi form konteks 3-tingkat (§2). `contracts.py`, `api_stub.py` sudah diperbarui & divalidasi. Enum baru: `BusinessStage`, `PrimaryGoal`, `TargetCustomer`, `BudgetRange`.
 
 ---
 
-## 1. Ringkasan Eksekutif
+## 0. Prinsip yang mengunci semuanya: *Contract-First*
 
-Sistem ini adalah SaaS yang menghasilkan laporan **Business Opportunity Analysis** terpersonalisasi untuk UMKM atau perusahaan skala kecil-menengah di Indonesia, berdasarkan deskripsi bisnis dan lokasi yang diinput klien. Sistem menggabungkan analisis sentimen geo-demografis, riset SWOT berbasis kompetitor lokal, dan insight pasar — diproses melalui pipeline multi-agent dengan RAG (Retrieval-Augmented Generation).
+Masalah utama tim 4 orang di hackathon: saling menunggu. Frontend nunggu API, backend nunggu agent, agent nunggu data scraping. Solusinya: **bekukan kontrak dulu, baru semua orang kerja terhadap MOCK.**
 
-**Diferensiator utama:** fokus pada geo-sentiment heatmap untuk konteks lokal Indonesia — sebuah niche yang belum tergarap dengan baik oleh kompetitor eksisting (Manus, IdeaProof, GrowthGrid, Sai by Simular, dll., yang umumnya berorientasi pasar B2B/SaaS global, bukan UMKM lokal Indonesia).
+Yang dibekukan di Jam-0 (sudah dibuat & divalidasi jalan, tinggal `git commit`):
 
-**Prinsip desain:** beban komputasi dan keputusan riset ada di sisi backend (scraping + AI agent), sisi klien tetap sesederhana mungkin (satu form input → satu laporan output).
-
----
-
-## 2. Ruang Lingkup
-
-### 2.1 MVP Hackathon (target: selesai dalam sisa waktu hackathon)
-Scope dipersempit secara sengaja agar bisa didemokan end-to-end dan tidak terjebak di "half-built pipeline."
-
-| Termasuk MVP | Ditunda / Di luar MVP |
-|---|---|
-| Input form (deskripsi bisnis + lokasi + kategori) | Business Pitch Deck generator (fitur commodity, banyak kompetitor) |
-| Sentimen dari web search + berita + Google Trends | Sentimen dari X/Twitter (biaya & legal tidak layak untuk 1 minggu) |
-| SWOT dari web search + Places API (read-only, tanpa storage jangka panjang) | Riset jurnal/artikel akademik mendalam (nice-to-have) |
-| RAG sederhana (chunking + reranker) | Full Contextual Retrieval Anthropic (per-chunk LLM call, mahal secara token/waktu) |
-| Full report analysis (naratif gabungan) | Dashboard analitik interaktif multi-user |
-| 1 visualisasi utama: heatmap sentimen geografis | Multi-bahasa selain Indonesia/Inggris |
-| Confidence score per-section (bukan 1 angka global) | Sistem akun/billing multi-tenant penuh |
-
-### 2.2 Roadmap Pasca-Hackathon (Full Product)
-Ditulis di Bagian 12 sebagai referensi arah pengembangan, bukan target hackathon.
-
----
-
-## 3. Arsitektur Sistem (High-Level)
-
-```
-[Client Form] 
-     │  (deskripsi bisnis, lokasi, kategori, scope)
-     ▼
-[API Gateway / Orchestrator]
-     │
-     ├──► [Scraping Service] ──► [Raw Data Buffer (temp, TTL 24-72 jam)]
-     │         │
-     │         ├─ Web Search Module (berita, tren, artikel publik)
-     │         ├─ Google Trends Module
-     │         ├─ Places API Module (on-demand, no long-term storage)
-     │         └─ BPS/Databoks Module (statistik makro & UMKM)
-     │
-     ▼
-[Preprocessing & Validation]
-     │  (dedup, filter noise, deteksi bahasa, normalisasi)
-     ▼
-[RAG Ingestion Pipeline] ──► [Vector DB (embeddings)] + [BM25 Index]
-     │
-     ▼
-[Agent Orchestration Layer]
-     │
-     ├─ Sentiment Agent      (geo + demografi classification)
-     ├─ SWOT Agent           (kompetitor + produk + riset pasar)
-     ├─ Rerank Agent         (top-k/top-p filtering hasil retrieval)
-     └─ Summary Agent        (sintesis lintas-agent)
-     ▼
-[Report Composer] ──► [Confidence Scorer] ──► [Output Renderer]
-     │
-     ▼
-[Client: Full Report + Sentiment Heatmap + Data Viz]
-```
-
-**Prinsip arsitektur kunci:**
-- Setiap panggilan API eksternal (Maps, X, dsb.) **stateless per-request** — tidak ada penyimpanan konten mentah pihak ketiga secara permanen (lihat Bagian 5.3 soal kepatuhan TOS).
-- Buffer data mentah punya **TTL (time-to-live)** otomatis, bukan penyimpanan permanen.
-- Agent-agent berjalan **paralel di mana mungkin** (Sentiment Agent dan SWOT Agent independen satu sama lain) untuk menekan latensi total.
-
----
-
-## 4. Alur Data & Pipeline Detail
-
-### Tahap 0 — Input & Validasi Scope
-- Form input wajib: nama/jenis bisnis, deskripsi produk/jasa, lokasi (kota/kecamatan), kategori industri (dropdown terstruktur, bukan free-text saja — untuk memudahkan query scraping terarah).
-- **Checkpoint konfirmasi:** sistem menampilkan ringkasan interpretasi input (contoh: "Kami akan menganalisis: kompetitor kedai kopi dalam radius 3km dari [lokasi]") sebelum lanjut ke scraping — mencegah AI salah asumsi dan buang compute di awal.
-- Output tahap ini: `ScopeConfig` (JSON terstruktur) yang jadi parameter semua agent berikutnya.
-
-### Tahap 1 — Scraping Data
-| Sub-modul | Sumber | Metode | Catatan Legal |
-|---|---|---|---|
-| Web search & berita | Google/Bing search API, RSS berita lokal | Query terarah per kategori bisnis + lokasi | Aman — hasil publik, tidak perlu caching agresif |
-| Tren pasar | Google Trends API | Query per kata kunci produk | Gratis, aman |
-| Geo-sentiment | Google Places API | On-demand per request, **tidak menyimpan raw review** | Wajib patuh TOS: dilarang cache/scrape konten Maps di luar sesi, kecuali place_id yang boleh disimpan permanen |
-| Statistik makro/UMKM | BPS, Databoks | Query terjadwal (bukan real-time per klien) | Data publik resmi, aman |
-| ~~Medsos X/Twitter~~ | ~~X API~~ | **Tidak digunakan di MVP** | Biaya tinggi ($100–5000+/bulan) & scraping langsung dilarang TOS X |
-
-**Rate limiting & retry policy:** setiap sub-modul punya circuit breaker — jika satu sumber gagal/limit habis, pipeline lanjut dengan sumber yang tersedia (graceful degradation), bukan gagal total.
-
-### Tahap 2 — Preprocessing
-- Deduplikasi konten (hash-based + semantic similarity threshold).
-- Filter bahasa (fokus ID/EN, buang noise bahasa lain).
-- Ekstraksi metadata: lokasi geografis, tanggal publikasi, sumber, kategori awal (sentimen/SWOT).
-
-### Tahap 3 — RAG Ingestion
-- Chunking dokumen (ukuran ~300-500 token per chunk).
-- **MVP:** embedding langsung + BM25 index (tanpa contextualization per-chunk, demi kecepatan build).
-- **Versi lanjutan (pasca-hackathon):** tambahkan Contextual Retrieval — setiap chunk diberi context snippet dari LLM murah sebelum di-embed, terbukti mengurangi kegagalan retrieval top-20 secara signifikan berdasarkan riset Anthropic.
-- Reranking top-k/top-p dilakukan oleh **Rerank Agent** sebelum masuk ke agent analisis.
-
-### Tahap 4 — Agent Processing
-Detail tiap agent ada di Bagian 6.
-
-### Tahap 5 — Report Composition
-- Summary Agent menggabungkan output Sentiment Agent + SWOT Agent → narasi terstruktur.
-- Confidence Scorer menghitung skor **per section** (lihat Bagian 8.2), bukan satu angka global.
-- Output Renderer merender ke format final (Markdown/HTML untuk web, opsional PDF export).
-
----
-
-## 5. Sumber Data & Constraints Legal
-
-### 5.1 Tabel Sumber Data
-
-| Sumber | Jenis Data | Biaya (perkiraan) | Batasan Kunci |
-|---|---|---|---|
-| Web Search API | Berita, artikel, tren | Rendah–menengah, tergantung provider | Rate limit per menit |
-| Google Trends | Minat pencarian per kata kunci/wilayah | Gratis | Granularitas terbatas untuk wilayah kecil |
-| Google Places API | Rating, jumlah ulasan (agregat), lokasi kompetitor | Pay-per-call | **Dilarang cache/scrape/simpan konten (nama bisnis, alamat, ulasan) di luar sesi**, kecuali place_id boleh disimpan permanen; caching konten lain maksimal 30 hari untuk tujuan performa saja |
-| BPS / Databoks | Statistik ekonomi, UMKM, demografi | Gratis (publik) | Update tidak real-time, granularitas kabupaten/kota, bukan hyper-lokal |
-| X/Twitter API | Sentimen medsos | **Ditunda** — $100–5000+/bulan, tanpa free tier layak | Scraping langsung dilarang TOS |
-
-### 5.2 Data Tambahan yang Direkomendasikan (belum ada di pipeline awal)
-- Data demografi & daya beli lokal (BPS/Databoks per provinsi/kota).
-- Data kepadatan aktivitas area (Places API "popular times" sebagai proxy traffic).
-- Data regulasi/perizinan lokal dasar (sumber: portal OSS/pemerintah daerah) — sering jadi item SWOT (Threat/Weakness) yang terlewat kalau hanya andalkan web search umum.
-
-### 5.3 Kepatuhan (Compliance) — Wajib Dibaca Tim
-- **Places API:** arsitektur penyimpanan HARUS punya expiry policy otomatis untuk konten (bukan place_id). Jangan bangun database permanen dari hasil scraping ulasan — ini pelanggaran kontrak (bukan pidana, tapi bisa kena suspend akun API kapan saja).
-- **X/Twitter:** tidak digunakan di MVP. Jika akan dipakai di roadmap lanjutan, gunakan API resmi berbayar, bukan scraping langsung.
-- Disclaimer legal di UI produk: "Insight dihasilkan dari sumber publik dan model AI, bukan pengganti riset pasar profesional atau nasihat hukum/keuangan."
-
----
-
-## 6. Spesifikasi Agent AI
-
-### 6.1 Sentiment Agent
-- **Input:** chunk terklasifikasi dari RAG (kategori: medsos/berita/review), `ScopeConfig`.
-- **Tugas:** klasifikasi sentimen (positif/netral/negatif) + tagging geografis (kecamatan/kota) dan demografis (jika data tersedia — umur, gender, hanya jika sumber punya sinyal ini, tidak boleh diasumsikan/di-generate).
-- **Output:** `SentimentResult { location, sentiment_score, sample_size, confidence }`.
-- **Constraint penting:** JANGAN generate demografi fiktif jika data sumber tidak menyediakannya — lebih baik `null`/"data tidak tersedia" daripada estimasi tanpa dasar.
-
-### 6.2 SWOT Agent
-- **Input:** chunk kompetitor (geo-based), deskripsi produk klien dari form, hasil riset pasar dari RAG.
-- **Tugas:** riset kompetitor lokal (nama, kategori, rating agregat — **bukan quote ulasan verbatim**), sintesis SWOT 4 kuadran.
-- **Output:** `SWOTResult { strengths[], weaknesses[], opportunities[], threats[], competitor_list[], confidence }`.
-
-### 6.3 Rerank Agent
-- **Tugas:** memfilter top-k/top-p chunk hasil retrieval berdasarkan relevansi ke `ScopeConfig` (bukan hanya similarity score mentah).
-- **Kriteria rerank yang harus didefinisikan eksplisit** (agar tidak jadi black box saat demo): relevansi kategori bisnis, kedekatan geografis, recency data (bobot lebih tinggi untuk data <6 bulan).
-
-### 6.4 Summary Agent
-- **Input:** output Sentiment Agent + SWOT Agent + data pasar mentah.
-- **Tugas:** sintesis naratif full report, memastikan konsistensi antar-section (misal: SWOT "Threat: kompetitor padat" harus konsisten dengan data sentimen kompetitor di area sama).
-- **Output:** draft laporan lengkap + insight market.
-
----
-
-## 7. RAG & Retrieval — Spesifikasi Teknis
-
-| Komponen | MVP Hackathon | Versi Lanjutan |
+| File | Isi | Status |
 |---|---|---|
-| Chunking | Fixed-size (~400 token), overlap 10-15% | Semantic chunking |
-| Embedding | Model embedding standar (mis. via Fireworks AI / open model on ROCm) | Sama, tetap open model untuk cost efficiency |
-| Index | Vector similarity + BM25 hybrid | Sama |
-| Contextualization | Tidak ada (langsung embed) | Contextual Retrieval — tiap chunk diberi context snippet dari LLM kecil sebelum embed |
-| Reranking | Cross-encoder ringan atau LLM-based scoring | Sama, ditambah kriteria recency & geo-relevansi |
-| Top-K ke LLM akhir | ~10-15 chunk | ~20 chunk (riset Anthropic menunjukkan top-20 lebih efektif dari top-5/10) |
+| `contracts/contracts.py` | Bentuk **data** (Pydantic). Satu sumber kebenaran. | ✅ tervalidasi |
+| `contracts/interfaces.py` | Bentuk **fungsi** (Protocol) per domain. | ✅ tervalidasi |
+| `contracts/api_stub.py` | Kontrak **REST** + kerangka orchestrator (`uvicorn` → OpenAPI). | ✅ jalan |
+| `fixtures/raw_data_items.sample.json` | Data contoh, biar AI/ML & Backend tak menunggu scraper. | ✅ tervalidasi |
 
-**Catatan biaya:** Contextual Retrieval penuh butuh 1 LLM call per chunk (memasukkan seluruh dokumen sebagai konteks) — ini mahal secara token dan waktu. Untuk 1 minggu hackathon, ini di luar scope; cukup dicatat di dokumen roadmap sebagai peningkatan kualitas retrieval di masa depan.
+Aturan: siapa pun mau ubah field → umumkan di channel + naikkan `CONTRACT_VERSION`. Titik.
 
 ---
 
-## 8. Spesifikasi Output
+## 1. Keputusan Stack (dipilih dari menu Bagian 9 spesifikasi)
 
-### 8.1 Format Laporan
-- **Full Report Analysis** (utama): dokumen terstruktur berisi ringkasan eksekutif, sentimen (dengan heatmap), SWOT, insight market, rekomendasi.
-- **Sentiment Heatmap**: visualisasi peta dengan gradasi warna berdasarkan skor sentimen per area geografis.
-- **Data Viz pendukung**: grafik distribusi sentimen, tabel kompetitor.
-- Format ekspor: Markdown/HTML (web-native, cepat dibangun) — PDF/PPTX opsional jika waktu memungkinkan.
+**Bahasa:** Python 3.11+ untuk backend/AI/scraping (Pydantic dipakai bareng = keuntungan paralel besar), TypeScript untuk frontend.
 
-### 8.2 Metodologi Confidence Score (revisi penting dari desain awal)
-Desain awal ("1 angka confidence 0-100% di akhir") berisiko *false precision* — angka yang terlihat presisi tapi tidak berdasar. Revisi:
-- Confidence dihitung **per section**, bukan satu angka global.
-- Formula sederhana (contoh, bisa disesuaikan): `confidence = f(jumlah_sumber, tingkat_kesepakatan_antar_sumber, recency_data)`.
-- Contoh tampilan: "Sentimen: 85% (12 sumber, mayoritas sepakat)" vs "Kompetitor: 40% (3 sumber, data terbatas)".
-- **Wajib:** confidence TIDAK boleh berupa angka yang di-generate subjektif oleh LLM tanpa basis kuantitatif yang jelas.
-
----
-
-## 9. Tech Stack (Konteks AMD Hackathon)
-
-| Layer | Rekomendasi |
-|---|---|
-| Compute | AMD Developer Cloud + ROCm (sesuai kredit hackathon) |
-| LLM Inference | Model open-source (Llama/Qwen/Gemma) via Fireworks AI API pada AMD hardware, atau Claude API untuk agent yang butuh reasoning kompleks (SWOT/Summary) jika budget API memungkinkan |
-| Embedding | Model embedding open-source yang kompatibel ROCm |
-| Vector DB | Solusi ringan (mis. Chroma/Qdrant) — cukup untuk skala demo |
-| Backend orchestration | Python (FastAPI) + framework agent (LangChain/CrewAI/AutoGen — sesuai rekomendasi track hackathon) |
-| Frontend | Web app ringan untuk form input + render laporan |
-| Storage sementara | Redis/objek storage dengan TTL otomatis (bukan DB permanen untuk raw scraped content) |
-
----
-
-## 10. Skema Data (Ringkas)
-
-```
-ScopeConfig {
-  business_type: string
-  description: string
-  location: { city, district, coordinates }
-  category: enum
-  created_at: timestamp
-  expires_at: timestamp   // untuk raw data buffer
-}
-
-SentimentResult {
-  scope_id: ref
-  location_tag: string
-  sentiment_score: float
-  sample_size: int
-  sources: string[]        // hanya nama sumber, bukan konten mentah tersimpan
-  confidence: float
-}
-
-SWOTResult {
-  scope_id: ref
-  strengths: string[]
-  weaknesses: string[]
-  opportunities: string[]
-  threats: string[]
-  competitors: { name, category, rating_aggregate, place_id }[]  // place_id boleh disimpan permanen, konten lain tidak
-  confidence: float
-}
-
-Report {
-  scope_id: ref
-  sentiment: SentimentResult
-  swot: SWOTResult
-  narrative: text
-  visualizations: [ heatmap_url, chart_url ]
-  generated_at: timestamp
-}
-```
-
----
-
-## 11. Non-Functional Requirements
-
-| Aspek | Target MVP |
-|---|---|
-| Waktu proses laporan | < 3-5 menit end-to-end (batas wajar untuk demo) |
-| Graceful degradation | Sistem tetap menghasilkan laporan parsial + disclosure jujur jika 1 sumber data gagal |
-| Keamanan data klien | Deskripsi bisnis klien tidak dibagikan ke pihak ketiga di luar API call yang diperlukan |
-| Biaya per laporan | Dihitung & dimonitor eksplisit (jumlah API call scraping + LLM call agent) agar model bisnis masuk akal pasca-hackathon |
-| Bahasa | Indonesia (utama), Inggris (opsional) |
-
----
-
-## 12. Risiko & Mitigasi
-
-| Risiko | Dampak | Mitigasi |
+| Layer | Pilihan | Alasan singkat |
 |---|---|---|
-| Pelanggaran TOS Places API (caching konten) | Suspend akun API | Arsitektur stateless + TTL, hanya simpan place_id & insight teragregasi |
-| Biaya X API terlalu tinggi | Budget hackathon habis / fitur tidak bisa didemokan | Tidak pakai X di MVP, ganti web search + Trends |
-| Data UMKM lokal minim jejak digital | Laporan kosong/tidak informatif | Fallback eksplisit: laporan tetap tampil dengan disclosure "data terbatas untuk area ini", bukan AI mengarang insight |
-| Single point of failure di scraping | Seluruh pipeline gagal | Circuit breaker per sumber, degradasi bertahap |
-| False precision confidence score | Laporan menyesatkan pengguna, berisiko keputusan bisnis salah | Confidence dihitung per-section dari basis kuantitatif, bukan estimasi subjektif LLM |
-| Scope terlalu luas untuk waktu hackathon tersisa | Demo tidak selesai/tidak jalan end-to-end | Scope MVP dipangkas sesuai Bagian 2.1, prioritas: Full Report + Heatmap saja |
+| **Frontend** (Indra) | React + Vite + TS, TailwindCSS + shadcn/ui, TanStack Query | Cepat; tipe di-generate dari OpenAPI (`openapi-typescript`) → tak pernah nebak field |
+| **Heatmap** (Indra) | **MapLibre GL JS** (layer `heatmap` native) | Gratis, tanpa token Mapbox. Render dari GeoJSON kiriman backend. Recharts untuk chart pendukung |
+| **Backend/Orkestrasi** (Razan) | **FastAPI** + Pydantic v2, orkestrasi **asyncio murni** | Pipeline tetap (bukan agent-dynamic). asyncio = paling mudah di-debug saat demo. Sentiment ∥ SWOT via `asyncio.gather` |
+| **Job & state + TTL** (Razan) | **Redis** (+ `arq` worker async) | `EXPIRE` Redis = TTL buffer data mentah gratis (Bagian 5.3). `arq` beri durabilitas job tanpa berat Celery |
+| **Vector DB** (Izerhaf) | **Qdrant** | Punya **payload filter geo** + dukung sparse+dense vector → cocok untuk geo-relevance rerank & hybrid BGE-M3 |
+| **Embedding** (Izerhaf) | **BGE-M3** (MIT, 100+ bahasa incl. ID) | Dense **dan** sparse dalam satu model → hybrid tanpa index BM25 terpisah. Standar de-facto RAG multibahasa self-host 2026 |
+| **Reranker** (Izerhaf) | **BGE-reranker-v2-m3** | Cross-encoder multibahasa ringan, pasangan alami BGE-M3 |
+| **LLM inference** (Izerhaf) | **Fireworks AI** (Llama 3.3 70B / Qwen2.5 untuk SWOT+Summary; model 7-8B untuk klasifikasi/rerank) | Fireworks jalan **di AMD MI300X/MI350** → penuhi syarat "AMD hardware". AMD AI Developer Program kasih **$50 kredit Fireworks** |
+| **Scraping** (Faiz) | httpx (async) + tenacity (retry/circuit-breaker), feedparser (RSS) | Async = banyak sumber paralel; tenacity = graceful degradation per-sumber |
+| **Sumber** (Faiz) | Tavily/Brave (web search), pytrends *atau* SerpApi Trends, Google Places client resmi, **BPS WebAPI** | Tavily ramah-LLM & murah. pytrends gampang tapi rapuh → SerpApi Trends cadangan |
+
+### Catatan AMD (penting untuk juri)
+Supaya "pakai AMD" bermakna, bukan sekadar klaim: **self-host BGE-M3 + BGE-reranker (dan opsional 1 LLM) di AMD Developer Cloud + ROCm** (vLLM untuk LLM; Infinity/TEI untuk embedding), sementara Fireworks (juga di AMD Instinct) meng-handle LLM reasoning berat. Cerita: "beban embedding/rerank berjalan di ROCm milik kami sendiri."
+
+> Claude API boleh dipakai sebagai *fallback* kualitas untuk SWOT/Summary bila budget ada, tapi jangan jadikan jalur utama demo — jaga cerita "compute di AMD" tetap dominan.
 
 ---
 
-## 13. Roadmap Pasca-Hackathon (Referensi, di Luar Scope MVP)
+## 2. Form Konteks Klien — dasar seluruh pipeline
 
-1. Integrasi Contextual Retrieval penuh untuk akurasi RAG lebih tinggi.
-2. Evaluasi sumber sentimen medsos berbayar (X Enterprise atau alternatif seperti Instagram/TikTok) dengan model bisnis yang menutup biayanya.
-3. Business Pitch Deck generator sebagai fitur tambahan (bukan core).
-4. Sistem akun multi-tenant, billing per laporan/subscription.
-5. Ekspansi sumber data: data OSS/perizinan daerah, data harga sewa komersial lokal.
-6. Dashboard historis — bandingkan laporan yang sama dari waktu ke waktu untuk klien yang sama.
+Form ini secara efektif adalah **sumber konteks** untuk scraping → routing → LLM. Aturan penentuan isi: untuk tiap field, tanya *"kalau kosong, tahap mana yang nembak buta?"* Kalau tak ada yang rusak, field itu cuma bikin form berat. Hasilnya jatuh ke 3 tingkat. Semua sudah dimodelkan di `BusinessInput` (`contracts.py`).
+
+### Tingkat 1 — WAJIB (tanpa ini pipeline menebak-nebak)
+
+| Field | Widget | Menyetir apa |
+|---|---|---|
+| `category` (`IndustryCategory`) | dropdown | Query terarah per sumber + prior utama router. Wajib dropdown, bukan free-text (Tahap 0 spesifikasi) |
+| `business_type` + `description` | text pendek | Keyword pencarian & Trends; teks yang di-embed router untuk `relevance_score`; objek pembanding SWOT |
+| `location.city` (+ `district` opsional) | autocomplete | Semua yang geo: Places, filter Qdrant, heatmap. Kecamatan → analisis hyper-local |
+| `radius_km` | slider 1/3/5/10 km | Cakupan Places & arti "kompetitor lokal" |
+| `business_stage` (`BusinessStage`) | dropdown | **Framing** seluruh rekomendasi: `idea` (validasi) ≠ `established` (optimasi) ≠ `expanding` (ekspansi) |
+
+### Tingkat 2 — SANGAT DISARANKAN (ubah "laporan generik" → "pendukung keputusan")
+
+| Field | Widget | Menyetir apa |
+|---|---|---|
+| `primary_goals` (`PrimaryGoal`) | multi-select | **Paling berdampak, paling sering dilupakan.** Memberi tahu Summary Agent section mana ditekankan & ke mana rekomendasi diarahkan. Tanpa ini laporan cuma "menyajikan data" |
+| `target_customers` (`TargetCustomer`) | multi-select | Sentimen *siapa* yang dihitung + menambah keyword pencarian + menajamkan SWOT |
+
+### Tingkat 3 — OPSIONAL (bonus akurasi; jangan diwajibkan)
+
+| Field | Widget | Menyetir apa |
+|---|---|---|
+| `known_competitors` | text list | Seed SWOT + verifikasi apakah Places menemukan yang sama |
+| `unique_value` | text pendek | SWOT strengths lebih spesifik, bukan tebakan |
+| `budget_range` (`BudgetRange`) | dropdown | Rekomendasi realistis (feasibility), tak di luar jangkauan |
+| `business_name` | text | Personalisasi laporan saja; tidak dipakai scraping |
+
+### Kecukupan & UX
+Tingkat 1 + 2 sudah **cukup**: scraping terarah, router punya konteks embedding, tiap agent tahu apa yang dibandingkan & untuk siapa. **Checkpoint Tahap 0** (`interpreted_summary`) jadi jaring pengaman — sistem menampilkan interpretasinya sebelum membakar compute, jadi salah tangkap ketahuan lebih awal.
+
+**Saran layout:** Tingkat 1 di layar utama (barrier rendah) → Tingkat 2–3 di panel *"Tambah konteks (opsional)"* yang bisa dilipat. Konsisten dgn prinsip "sisi klien sesederhana mungkin".
+
+**Contoh `interpreted_summary` yang di-generate** (dari stage=`idea`, goals=[validate_idea, know_competitors]):
+> *"Kami akan **memvalidasi peluang** Kedai kopi specialty dalam radius 3km dari Cikarang Selatan, dengan fokus: validate_idea, know_competitors. Termasuk kompetitor lokal dan sentimen area sekitarnya."*
 
 ---
 
-## 14. Catatan Penutup
+## 3. Peta Seam & Kepemilikan
 
-Dokumen ini disusun untuk mempersempit scope pipeline awal menjadi sesuatu yang **realistis dikerjakan dan didemokan** dalam sisa waktu hackathon, sambil tetap menjaga diferensiasi utama (geo-sentiment lokal Indonesia) sebagai nilai jual ke juri. Prioritas tertinggi: pipeline end-to-end yang jalan dengan scope kecil, lebih baik daripada pipeline besar yang setengah jadi.
+```
+[Indra: Frontend]
+   │  REST (OpenAPI dari api_stub.py)
+   ▼
+[Razan: FastAPI + Orchestrator]───► Redis (job state + TTL buffer)
+   │        │                          Qdrant (vektor)
+   │        ├─ panggil ──► [Faiz: ScraperModule]  → RawDataItem[]
+   │        ├─ panggil ──► [Izerhaf: DataRouter]  → RoutedDataItem[]   ◄── METRIK ROUTING
+   │        ├─ panggil ──► [Izerhaf: Retriever + Rerank/Sentiment/SWOT Agent]
+   │        └─ panggil ──► [Izerhaf: SummaryAgent] → Report
+   ▼
+[Indra: render Report + Heatmap]
+```
+
+Seam yang dibekukan (nama tipe di `contracts.py`):
+
+| Seam | Dari → Ke | Kontrak |
+|---|---|---|
+| Input | Indra → Razan | `BusinessInput` (3 tingkat) → `CreateAnalysisResponse` (berisi `ScopeConfig`) |
+| Scraping | Faiz → Router | `RawDataItem[]` |
+| **Routing** | Router → Preprocess | `RoutedDataItem[]` (lihat §4) |
+| RAG | Izerhaf internal | `Chunk`, `RetrievedChunk`, `Rerank*` |
+| Agent | Izerhaf → Razan | `SentimentResult`, `SWOTResult` |
+| Report | Razan → Indra | `Report`, `AnalysisStatusResponse` |
+
+Kuncinya: **Faiz cuma perlu memproduksi `RawDataItem`** (tak perlu tahu track/preprocessing). **Indra cuma konsumsi 3 tipe** (`BusinessInput`, `AnalysisStatusResponse`, `Report`). Batas tanggung jawab jelas.
+
+---
+
+## 4. Metrik Routing — "penentu data masuk ke mana sebelum preprocessing"
+
+Dimodelkan sebagai **gate + klasifikasi multi-label** yang **deterministik & explainable** (Bagian 6.3: jangan black box saat demo). Tipe: `RoutingScore`, `RoutingDecision`, `RoutedDataItem`, `RouterConfig`.
+
+**Posisi:** persis antara Scraping (Faiz) dan Preprocessing. Logika dimiliki AI/ML (Izerhaf), di-wire Backend (Razan).
+
+**Komponen metrik** (kuantitatif, murah, tanpa LLM call per-item):
+
+| Komponen | Cara hitung | Fungsi |
+|---|---|---|
+| `relevance_score` [0–1] | cosine sim `embed(item.raw_text)` vs `embed(scope intent)` — pakai BGE-M3 yang sudah ada | Gerbang on/off-topic |
+| `geo_match` | cocokkan `geo_hint` vs `scope.location` → exact/city/region/none | Bobot kedekatan geografis |
+| `recency_score` [0–1] | decay eksponensial dari `published_at` (half-life default 180 hari) | Data baru lebih berbobot |
+| `lang_ok` | `lang_hint ∈ {id, en}` | Buang noise bahasa lain |
+| `is_duplicate` | hash + similarity ≥ 0.92 | Deduplikasi |
+| `quality_score` | `0.5·relevance + 0.3·geo + 0.2·recency` | Bobot komposit → dipakai lagi di confidence |
+
+**Aturan keputusan (urutan):**
+```
+1. is_duplicate                          → DISCARD("dup")
+2. lang bukan {id,en} & relevance < 0.55 → DISCARD("foreign_lang")
+3. relevance < tau_discard (0.35)        → DISCARD("off_topic")
+4. selain itu, tetapkan track (multi-label) dari source_type:
+     review / forum / social      → SENTIMENT
+     places_listing               → SWOT (kompetitor)
+     news / blog / article        → SWOT (+ SENTIMENT bila opini/geo cocok)
+     trends / bps_stat / databoks → MARKET
+```
+Tiap keputusan menyimpan `reason` (mis. `"review+geo:city -> sentiment"`) → bisa ditampilkan di panel debug demo, dan angkanya (`relevance`, `geo`, `recency`) mengalir langsung jadi input kuantitatif untuk **confidence per-section** (Bagian 8.2). Satu metrik, dua kebutuhan: routing **dan** basis confidence.
+
+**Item #5 di fixtures** (post kripto Inggris, 2024) sengaja dibuat untuk memverifikasi router membuangnya (off-topic + foreign + basi).
+
+---
+
+## 5. Kontrak REST (ringkas)
+
+Dari `api_stub.py` (`uvicorn api_stub:app --reload`, buka `/docs`):
+
+| Method | Endpoint | Fungsi |
+|---|---|---|
+| POST | `/api/analyses` | Buat analisis → balikan `ScopeConfig` + `interpreted_summary` untuk **checkpoint konfirmasi** (Tahap 0) |
+| POST | `/api/analyses/{id}/confirm` | User setuju → pipeline jalan |
+| GET | `/api/analyses/{id}` | Polling `status` + `progress.pct` + `sections_ready` |
+| GET | `/api/analyses/{id}/report` | Ambil `Report` (final/parsial + `degradation_notes`) |
+
+`AnalysisStatus` enum memetakan stage pipeline → persen, jadi Indra bisa bikin progress bar tanpa nanya backend. Generate tipe: `npx openapi-typescript http://localhost:8000/openapi.json -o src/api.d.ts`.
+
+---
+
+## 6. Struktur Repo (monorepo)
+
+```
+boa/
+├── contracts/          # SUMBER KEBENARAN — di-freeze duluan
+│   ├── contracts.py    #   model data (BusinessInput 3-tingkat, dst)
+│   ├── interfaces.py   #   Protocol per domain
+│   └── api_stub.py     #   REST + kerangka orchestrator
+├── fixtures/           # data contoh untuk kerja offline
+├── backend/            # Razan: orchestrator, redis, qdrant, api nyata
+├── scraping/           # Faiz: satu file per ScraperModule
+├── ml/                 # Izerhaf: router, retriever, agents, model serving
+└── frontend/           # Indra: React app
+```
+Semua Python service `import` dari `contracts/`. Frontend generate `api.d.ts` dari OpenAPI.
+
+---
+
+## 7. Yang bisa dikerjakan MASING-MASING di Hari-1 (tanpa saling tunggu)
+
+**Indra (Frontend)** — jalankan `api_stub.py` sebagai backend palsu. Bangun: **form konteks 3-tingkat §2** (Tingkat 1 di layar utama; Tingkat 2–3 di panel lipat), layar **konfirmasi scope** (tampilkan `interpreted_summary`), progress UI (polling status), layout laporan + **MapLibre heatmap** dari GeoJSON dummy. Semua field & enum pasti dari OpenAPI.
+
+**Razan (Backend)** — isi kerangka `_run_pipeline`. Hari-1: wire Redis (job state + TTL) & Qdrant (docker), sempurnakan `_build_scope` (keyword dari `target_customers`, framing dari `business_stage`), jalankan orchestrator dengan **MockScraper + MockAgent** (mengembalikan fixtures) → pipeline end-to-end "hidup" sebelum kode nyata siap. Tukar mock satu per satu.
+
+**Izerhaf (AI/ML)** — kerja dari `fixtures/raw_data_items.sample.json`, tak perlu Faiz. Hari-1: stand-up BGE-M3 + reranker + Qdrant di AMD Dev Cloud/ROCm; implement `DataRouter` (rule-based + embedding sim) & verifikasi item #5 ter-discard; implement Sentiment/SWOT agent yang baca `primary_goals`/`target_customers` dari scope & mengembalikan `*Result` valid.
+
+**Faiz (Scraping)** — implement `ScraperModule` per sumber terhadap sumber live, tak bergantung siapa pun. Output: `RawDataItem[]`. Kontribusi krusial: **dump hasil nyata ke `fixtures/`** supaya makin realistis. Wajib circuit-breaker (return `[]` + log, jangan raise).
+
+---
+
+## 8. Milestone Integrasi
+
+| Tahap | Target |
+|---|---|
+| **Jam-0** | Freeze `contracts/`. Semua `import` & generate tipe. Semua kerja vs mock/fixtures. |
+| **Integrasi 1** | Faiz `RawDataItem` nyata → Router Izerhaf. Ganti fixtures dgn data live. |
+| **Integrasi 2** | Agent Izerhaf nyata → orchestrator Razan (ganti MockAgent). |
+| **Integrasi 3** | API Razan nyata → frontend Indra (ganti `api_stub`). |
+| **Final** | 1 run end-to-end < 3–5 menit + heatmap tampil + graceful degradation teruji (matikan 1 sumber, laporan tetap keluar + disclosure). |
+
+---
+
+## 9. Biaya & kredit (jaga model bisnis masuk akal — NFR Bagian 11)
+- Klaim **$50 kredit Fireworks** via AMD AI Developer Program untuk LLM inference.
+- Instrumentasi: hitung `scraping API call` + `LLM call` per laporan (log di orchestrator) → tampilkan "biaya per laporan" untuk pitch juri.
+- Places API pay-per-call: batasi via `radius_km` + hanya on-demand per request (sesuai TOS).
+
+---
+
+## 10. Ringkasan tipe kunci (`contracts.py` v1.1)
+
+| Grup | Tipe |
+|---|---|
+| Enum baru v1.1 | `BusinessStage`, `PrimaryGoal`, `TargetCustomer`, `BudgetRange` |
+| Input & scope | `BusinessInput` (3-tingkat), `ScopeConfig`, `Location`, `GeoPoint` |
+| Scraping → routing | `RawDataItem`, `RoutingScore`, `RoutingDecision`, `RoutedDataItem`, `RouterConfig` |
+| RAG | `Chunk`, `RetrievedChunk`, `RerankRequest/Response` |
+| Agent output | `SentimentResult`, `SentimentPoint`, `SWOTResult`, `Competitor`, `SectionConfidence` |
+| Report & API | `Report`, `Visualizations`, `CreateAnalysisResponse`, `AnalysisStatusResponse`, `ProgressStage` |
+
+---
+
+**Ringkas:** stack dipilih, form konteks didesain 3-tingkat & dibekukan ke `BusinessInput`, 6 seam jadi kode tervalidasi, metrik routing didesain sebagai gate+multi-label explainable, tiap orang punya jalur Hari-1 tanpa blocking. Prioritas tertinggi tetap: **end-to-end kecil yang jalan** > pipeline besar setengah jadi.
