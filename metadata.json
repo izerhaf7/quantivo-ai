@@ -1,0 +1,8 @@
+{
+  "name": "Consultin AI Business Consultant",
+  "description": "Provides AI-driven business consulting to help entrepreneurs and professionals make informed decisions and optimize strategies efficiently.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
