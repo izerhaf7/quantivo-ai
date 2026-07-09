@@ -44,17 +44,40 @@ _STAGE_PCT = {
 }
 
 
+_STAGE_VERB = {
+    "idea": "memvalidasi peluang",
+    "new": "menganalisis posisi",
+    "established": "menganalisis peluang pertumbuhan",
+    "expanding": "menilai ekspansi",
+}
+
+
 def _build_scope(inp: BusinessInput) -> ScopeConfig:
-    """Tahap 0 — Razan isi logika keyword/competitor query yang sebenarnya."""
+    """
+    Tahap 0 — Razan isi logika keyword/competitor query yang sebenarnya.
+    Perhatikan bagaimana field form baru ikut membentuk konteks:
+      - business_stage  -> framing kata kerja di ringkasan
+      - primary_goals   -> nanti dipakai Summary Agent untuk fokus section
+      - target_customers-> menambah keyword pencarian & sentimen terarah
+      - known_competitors -> seed competitor query
+    """
     loc = inp.location
     where = loc.district or loc.city
+    verb = _STAGE_VERB.get(inp.business_stage.value, "menganalisis")
+
+    keywords = [inp.business_type, f"{inp.business_type} {loc.city}"]
+    for tc in inp.target_customers:                 # perkaya query dgn segmen
+        keywords.append(f"{inp.business_type} {tc.value}")
+
+    goals_txt = ", ".join(g.value for g in inp.primary_goals) or "analisis peluang umum"
     return ScopeConfig(
         business_input=inp,
         interpreted_summary=(
-            f"Kami akan menganalisis kompetitor {inp.business_type} dalam radius "
-            f"{inp.radius_km:g}km dari {where}, plus sentimen area sekitarnya."
+            f"Kami akan {verb} {inp.business_type} dalam radius {inp.radius_km:g}km "
+            f"dari {where}, dengan fokus: {goals_txt}. Termasuk kompetitor lokal "
+            f"dan sentimen area sekitarnya."
         ),
-        search_keywords=[inp.business_type, f"{inp.business_type} {loc.city}"],
+        search_keywords=keywords,
         competitor_query=f"{inp.business_type} {where}",
         expires_at=_now() + timedelta(hours=48),   # TTL buffer 48 jam
     )
