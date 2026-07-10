@@ -2653,86 +2653,88 @@ function AccountView({ mode = "account", onLogout, language, onLanguageChange, t
         )}
 
         {mode === "subscription" && (
-        <section className="relative min-h-[calc(100dvh-9rem)] overflow-hidden rounded-[2rem] bg-black p-5 text-white shadow-[0px_-13px_220px_rgba(9,0,255,0.38)] ring-1 ring-white/10 sm:p-6 md:p-8">
-          <div className="pointer-events-none absolute inset-x-[-22%] top-[-34rem] h-[58rem] rounded-full border-[8rem] border-[#3131f5] opacity-50 blur-[92px]" />
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-96 bg-[linear-gradient(to_right,rgba(255,255,255,0.16)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:70px_80px] [mask-image:radial-gradient(50%_50%,white,transparent)]" />
-          <div className="pointer-events-none absolute left-[10%] top-20 h-[34rem] w-[80%] rounded-full bg-[#206ce8] opacity-35 blur-[120px] mix-blend-screen" />
+        <section className="relative min-h-[calc(100dvh-9rem)] overflow-hidden rounded-[2rem] bg-[#03040a] text-white ring-1 ring-white/10">
+          <div className="pointer-events-none absolute inset-x-[-25%] top-[-42rem] h-[70rem] rounded-full border-[10rem] border-[#3131f5]/70 blur-[96px]" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-[26rem] bg-[linear-gradient(to_right,rgba(255,255,255,0.15)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:72px_82px] opacity-70 [mask-image:radial-gradient(50%_50%,white,transparent)]" />
+          <div className="pointer-events-none absolute left-[8%] top-24 h-[34rem] w-[84%] rounded-full bg-[#206ce8] opacity-30 blur-[130px] mix-blend-screen" />
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.12),transparent_34%),linear-gradient(to_bottom,transparent,rgba(0,0,0,0.72))]" />
 
-          <div className="relative mx-auto max-w-5xl">
-            <article className="mx-auto mb-7 max-w-3xl pt-8 text-center md:pt-14">
-              <p className={`mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6EA8D8] ${JK}`}>Paket dibuat untuk cara kerja UMKM</p>
-              <h2 className={`mx-auto max-w-2xl text-3xl font-semibold leading-tight text-white md:text-5xl ${JK}`}>Pilih paket yang cukup untuk keputusan berikutnya.</h2>
-              <p className={`mx-auto mt-3 max-w-[58ch] text-sm leading-relaxed text-white/60 ${JK}`}>Mulai dari validasi ide, lalu naik saat laporan lengkap dan kolaborasi tim dibutuhkan.</p>
-            </article>
+          <div className="relative mx-auto max-w-6xl px-5 py-8 sm:px-6 md:px-8 md:py-12">
+            <div className="mb-8 grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
+              <div className="max-w-3xl">
+                <p className={`mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6EA8D8] ${JK}`}>Pricing Consultin</p>
+                <h2 className={`text-[2.15rem] font-semibold leading-[1.05] tracking-[-0.04em] text-white sm:text-5xl md:text-6xl ${JK}`}>Paket yang naik saat keputusan makin serius.</h2>
+                <p className={`mt-4 max-w-[56ch] text-sm leading-7 text-white/58 ${JK}`}>Mulai validasi ide. Upgrade ketika butuh laporan lengkap, deck, dan kerja bareng tim.</p>
+              </div>
 
-            <div className="relative z-10 mb-7 flex justify-center">
-              <div className="grid min-h-[2.75rem] grid-cols-2 rounded-full border border-white/10 bg-neutral-900 p-1 shadow-[0_18px_80px_rgba(0,0,0,0.35)]">
+              <div className="w-fit rounded-full border border-white/10 bg-neutral-950/85 p-1 shadow-[0_18px_70px_rgba(0,0,0,0.45)] backdrop-blur">
                 {(["monthly", "yearly"] as const).map((mode) => (
                   <button key={mode} onClick={() => setBilling(mode)} aria-pressed={billing === mode}
-                    className={cn(`relative rounded-full px-5 py-2 text-[12px] font-semibold transition-colors ${JK} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70`,
-                      billing === mode ? "text-white" : "text-white/55 hover:text-white/85")}
+                    className={cn(`relative h-10 rounded-full px-4 text-[12px] font-semibold transition-colors ${JK} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:px-5`,
+                      billing === mode ? "text-white" : "text-white/48 hover:text-white/80")}
                   >
-                    {billing === mode && <span className="absolute inset-0 rounded-full border-2 border-blue-600 bg-gradient-to-t from-blue-500 to-blue-600 shadow-sm shadow-blue-600" />}
-                    <span className="relative">{mode === "monthly" ? "Bulanan" : "Tahunan, hemat 20%"}</span>
+                    {billing === mode && <span className="absolute inset-0 rounded-full border-2 border-blue-600 bg-gradient-to-t from-blue-500 to-blue-600 shadow-sm shadow-blue-700" />}
+                    <span className="relative">{mode === "monthly" ? "Bulanan" : "Tahunan - hemat 20%"}</span>
                   </button>
                 ))}
               </div>
             </div>
 
-            <div className="relative grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 lg:grid-cols-12 lg:items-stretch">
               {TIERS.map(({ id, name, eyebrow, price, period, desc, features, cta, active }) => {
                 const isPro = id === "pro";
                 const displayPrice = billing === "yearly" && id !== "free" ? price.replace("199K", "159K").replace("699K", "559K") : price;
                 return (
                   <div key={id}
-                    className={cn("relative flex min-h-[28rem] flex-col rounded-2xl border p-5 transition-all duration-200 sm:p-6",
-                      isPro ? "z-20 border-blue-500/45 bg-gradient-to-r from-neutral-900 via-neutral-800 to-neutral-900 shadow-[0px_-13px_180px_rgba(9,0,255,0.42)] md:-translate-y-3" :
-                      "z-10 border-neutral-800 bg-gradient-to-r from-neutral-950 via-neutral-900 to-neutral-950 hover:border-white/18",
-                      active && "ring-1 ring-white/16")}
+                    className={cn("relative flex flex-col overflow-hidden rounded-[1.75rem] border p-5 sm:p-6",
+                      isPro ? "lg:col-span-6 border-blue-500/45 bg-gradient-to-br from-neutral-900 via-[#101827] to-neutral-950 shadow-[0px_-16px_220px_rgba(9,0,255,0.42)]" :
+                      "lg:col-span-3 border-white/10 bg-white/[0.045] shadow-[0_22px_90px_rgba(0,0,0,0.25)] backdrop-blur-sm")}
                   >
-                    <div className="mb-6 flex min-h-[5.8rem] flex-col justify-between gap-3">
-                      <div className="flex items-start justify-between gap-3">
+                    {isPro && <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_0%,rgba(42,116,196,0.42),transparent_38%)]" />}
+                    <div className="relative flex flex-1 flex-col">
+                      <div className="mb-5 flex items-start justify-between gap-3">
                         <div>
-                          <p className={`text-[10px] font-semibold uppercase tracking-[0.14em] ${isPro ? "text-[#6EA8D8]" : "text-white/38"} ${JK}`}>{eyebrow}</p>
-                          <h3 className={`mt-2 text-2xl font-semibold text-white md:text-3xl ${JK}`}>{name}</h3>
+                          <p className={`text-[10px] font-semibold uppercase tracking-[0.14em] ${isPro ? "text-[#8dc7ff]" : "text-white/36"} ${JK}`}>{eyebrow}</p>
+                          <h3 className={cn(`mt-2 font-semibold tracking-[-0.03em] text-white ${JK}`, isPro ? "text-3xl sm:text-4xl" : "text-2xl")}>{name}</h3>
                         </div>
-                        {active && <span className={`rounded-full border border-white/10 bg-white/8 px-2.5 py-1 text-[10px] font-bold text-white/55 ${JK}`}>Aktif</span>}
+                        {active && <span className={`rounded-full border border-white/10 bg-white/8 px-2.5 py-1 text-[10px] font-bold text-white/50 ${JK}`}>Aktif</span>}
                       </div>
-                      <p className={`max-w-[28ch] text-[13px] leading-relaxed text-white/55 ${JK}`}>{desc}</p>
-                    </div>
 
-                    <div className="mb-6">
-                      <span className={`text-4xl font-semibold tracking-tight text-white ${JK}`}>{displayPrice}</span>
-                      <span className={`ml-1 text-sm font-medium text-white/45 ${JK}`}>{period}</span>
-                    </div>
+                      <p className={cn(`mb-7 max-w-[34ch] text-[13px] leading-6 text-white/56 ${JK}`, isPro && "sm:text-sm sm:leading-7")}>{desc}</p>
 
-                    <button
-                      className={cn(`mb-6 w-full rounded-xl px-4 py-3.5 text-[14px] font-semibold transition-all duration-200 active:scale-[0.98] ${JK} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70`,
-                        active ? "cursor-default border border-white/10 bg-white/8 text-white/42" :
-                        isPro ? "border border-blue-500 bg-gradient-to-t from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-900/60 hover:from-blue-400 hover:to-blue-600" :
-                        "border border-neutral-800 bg-gradient-to-t from-neutral-950 to-neutral-700 text-white shadow-lg shadow-neutral-950 hover:border-white/18")}
-                      disabled={active}
-                    >
-                      {cta}
-                    </button>
+                      <div className="mb-7 flex items-end gap-1">
+                        <span className={cn(`font-semibold tracking-[-0.04em] text-white ${JK}`, isPro ? "text-5xl sm:text-6xl" : "text-4xl")}>{displayPrice}</span>
+                        <span className={`pb-1 text-sm font-medium text-white/42 ${JK}`}>{period}</span>
+                      </div>
 
-                    <div className="mt-auto border-t border-white/10 pt-5">
-                      <p className={`mb-3 text-[13px] font-semibold text-white ${JK}`}>{id === "free" ? "Termasuk:" : id === "pro" ? "Semua yang penting:" : "Untuk tim:"}</p>
-                      <ul className="space-y-2.5">
-                        {features.map(f => (
-                          <li key={f} className={`text-[13px] leading-[1.6] text-white/68 ${JK}`}>{f}</li>
-                        ))}
-                      </ul>
+                      <button
+                        className={cn(`mb-7 h-12 w-full rounded-xl px-4 text-[14px] font-semibold transition-all duration-200 active:scale-[0.98] ${JK} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70`,
+                          active ? "cursor-default border border-white/10 bg-white/8 text-white/42" :
+                          isPro ? "border border-blue-500 bg-gradient-to-t from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-900/60 hover:from-blue-400 hover:to-blue-600" :
+                          "border border-neutral-800 bg-gradient-to-t from-neutral-950 to-neutral-700 text-white shadow-lg shadow-neutral-950 hover:border-white/18")}
+                        disabled={active}
+                      >
+                        {cta}
+                      </button>
+
+                      <div className="mt-auto border-t border-white/10 pt-5">
+                        <p className={`mb-3 text-[12px] font-semibold text-white/80 ${JK}`}>{id === "free" ? "Cukup untuk mulai" : id === "pro" ? "Untuk keputusan bisnis" : "Untuk kerja tim"}</p>
+                        <div className="grid gap-2.5">
+                          {features.map(f => (
+                            <div key={f} className={`rounded-xl border border-white/8 bg-white/[0.035] px-3 py-2.5 text-[13px] leading-5 text-white/68 ${JK}`}>{f}</div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );
               })}
             </div>
 
-            <div className="relative mt-6 grid gap-2 border-t border-white/8 pt-5 text-center sm:grid-cols-3">
-              <p className={`text-[12px] text-white/40 ${JK}`}>Batal kapan saja.</p>
-              <p className={`text-[12px] text-white/40 ${JK}`}>Data tetap milik Anda.</p>
-              <p className={`text-[12px] text-white/40 ${JK}`}>Upgrade saat laporan perlu dibawa ke keputusan.</p>
+            <div className="mt-5 grid gap-2 text-center sm:grid-cols-3">
+              <p className={`rounded-full border border-white/8 bg-white/[0.035] px-3 py-2 text-[12px] text-white/42 ${JK}`}>Batal kapan saja.</p>
+              <p className={`rounded-full border border-white/8 bg-white/[0.035] px-3 py-2 text-[12px] text-white/42 ${JK}`}>Data tetap milik Anda.</p>
+              <p className={`rounded-full border border-white/8 bg-white/[0.035] px-3 py-2 text-[12px] text-white/42 ${JK}`}>Upgrade saat output perlu dibawa ke rapat.</p>
             </div>
           </div>
         </section>
