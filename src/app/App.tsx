@@ -542,7 +542,7 @@ function AuthSplit({ children, title, subtitle, language, onLanguageChange, them
 // ─── App sidebar ──────────────────────────────────────────────────────────────
 const NAV_ITEMS = [
   { id: "home" as Screen, Icon: Home, label: "Dashboard" },
-  { id: "history" as Screen, Icon: Clock, label: "History" },
+  { id: "history" as Screen, Icon: Clock, label: "Riwayat" },
   { id: "subscription" as Screen, Icon: Crown, label: "Pro" },
   { id: "account" as Screen, Icon: User, label: "Akun" },
 ] as const;
