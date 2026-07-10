@@ -643,13 +643,9 @@ function AppShell({ children, screen, onNavigate, analysisCount, language, onLan
       <Sidebar active={screen} onNavigate={onNavigate} analysisCount={analysisCount} language={language} />
       <div className="flex-1 flex flex-col min-w-0">
         {/* Mobile Top Header */}
-        <header className="md:hidden sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-card/75 px-4 backdrop-blur-md">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => onNavigate("home")}>
-            <ImageWithFallback src={CLogoImg} alt="C" className="w-6 h-6 object-contain" />
-            <span className="text-sm font-bold font-['Plus_Jakarta_Sans'] text-foreground">Consultin</span>
-          </div>
-          <button onClick={() => onNavigate("account")} className="flex size-9 items-center justify-center rounded-full bg-muted text-foreground transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            <User size={15} />
+        <header className="md:hidden sticky top-0 z-40 flex h-14 items-center border-b border-white/10 bg-[#030712]/88 px-4 backdrop-blur-md">
+          <button onClick={() => onNavigate("home")} className="flex items-center rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300" aria-label="Kembali ke dashboard">
+            <ImageWithFallback src={ConsultinLogo} alt="Consultin" className="h-7 w-auto object-contain brightness-0 invert opacity-95" />
           </button>
         </header>
 
