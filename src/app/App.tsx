@@ -80,7 +80,7 @@ const UI_COPY = {
 
     // Phone verify
     phoneTitle: "Tambah Nomor Telepon",
-    phoneSubtitle: "Opsional — untuk keamanan akun dan notifikasi analisis",
+    phoneSubtitle: "Opsional · untuk keamanan akun dan notifikasi analisis",
     phonePlaceholder: "8xx xxxx xxxx",
     sendVerifyCode: "Kirim Kode Verifikasi",
     later: "Nanti Saja",
@@ -255,7 +255,7 @@ const UI_COPY = {
 
     // Phone verify
     phoneTitle: "Add Phone Number",
-    phoneSubtitle: "Optional — for account security and analysis notifications",
+    phoneSubtitle: "Optional · for account security and analysis notifications",
     phonePlaceholder: "8xx xxxx xxxx",
     sendVerifyCode: "Send Verification Code",
     later: "Maybe Later",
@@ -525,37 +525,26 @@ function AuthSplit({ children, title, subtitle, language, onLanguageChange, them
 
         <div className="flex-1 flex flex-col justify-center px-10 pb-10 relative z-10">
           <div className="mb-8">
-            <ImageWithFallback src={ConsultinLogo} alt="Consultin" className="h-9 w-auto object-contain mb-8 brightness-0 invert opacity-95" />
+            <ImageWithFallback src={CLogoImg} alt="Consultin" className="h-14 w-14 object-contain mb-8" />
             <h2 className="text-[28px] font-bold font-['Plus_Jakarta_Sans'] text-white leading-snug mb-3">
-              AI Business Intelligence<br />untuk UMKM Indonesia
+              Ruang kerja keputusan<br />untuk UMKM Indonesia
             </h2>
-            <p className="text-white/50 text-[13px] font-['Plus_Jakarta_Sans'] leading-relaxed">
-              Diperkuat AMD MI300X GPU & Qwen3 — analisis kompetitor, sentimen pasar, dan strategi bisnis dalam hitungan menit.
+            <p className="text-white/55 text-[13px] font-['Plus_Jakarta_Sans'] leading-relaxed">
+              Susun brief, cek asumsi, dan simpan laporan bisnis dalam satu alur yang tenang.
             </p>
           </div>
-          <div className="space-y-3.5">
-            {AUTH_FEATURES.map(({ Icon, label }) => (
+          <div className="space-y-3.5 border-t border-white/10 pt-6">
+            {["Brief ditinjau sebelum kuota dipakai", "Riwayat laporan mudah dibuka ulang", "Bahasa dan tema ada di pengaturan"].map((label) => (
               <div key={label} className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center shrink-0 border border-primary/20 shadow-sm">
-                  <Icon size={15} className="text-primary" />
-                </div>
+                <span className="h-px w-6 bg-primary" />
                 <p className="text-white/65 text-[13px] font-['Plus_Jakarta_Sans']">{label}</p>
               </div>
             ))}
           </div>
-          {/* AMD badge */}
-          <div className="mt-10 flex items-center gap-2">
-            <div className="px-2.5 py-1 bg-primary/10 border border-primary/20 rounded-md shadow-xs">
-              <span className="text-[10px] font-mono text-primary uppercase tracking-widest font-bold">AMD MI300X</span>
-            </div>
-            <div className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-md">
-              <span className="text-[10px] font-mono text-white/40 uppercase tracking-widest">Qwen3-235B</span>
-            </div>
-          </div>
         </div>
         <div className="p-7 border-t border-white/5 relative z-10">
           <p className="text-white/25 text-[11px] font-['Plus_Jakarta_Sans'] text-center">
-            AMD Developer Hackathon 2026 · Open Source
+            Consultin
           </p>
         </div>
       </div>
@@ -661,20 +650,8 @@ function Sidebar({ active, onNavigate, analysisCount, language }: {
         })}
       </nav>
 
-      {/* Tier + user */}
+      {/* User */}
       <div className="px-2 lg:px-3 pb-4 border-t border-white/[0.05] pt-3 space-y-2">
-        <div className="hidden lg:block bg-primary/10 rounded-lg p-3 border border-primary/15">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-semibold font-['Plus_Jakarta_Sans'] text-primary">{copy.freePlan}</span>
-            <span className="text-[10px] font-mono text-white/35">{analysisCount}/3</span>
-          </div>
-          <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden mb-2.5">
-            <div className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all" style={{ width: `${(analysisCount / 3) * 100}%` }} />
-          </div>
-          <button onClick={() => onNavigate("subscription")} className="w-full text-center text-[11px] font-semibold font-['Plus_Jakarta_Sans'] text-primary hover:text-white transition-colors">
-            {copy.upgrade} →
-          </button>
-        </div>
         <button
           onClick={() => onNavigate("account")}
           className={cn(
@@ -722,7 +699,6 @@ function AppShell({ children, screen, onNavigate, analysisCount, language, onLan
   theme: ThemeMode; onThemeChange: (theme: ThemeMode) => void;
 }) {
   const copy = UI_COPY[language];
-  const ThemeIcon = theme === "dark" ? Moon : Sun;
 
   return (
     <div className="flex min-h-[100dvh] bg-background">
@@ -739,20 +715,6 @@ function AppShell({ children, screen, onNavigate, analysisCount, language, onLan
           </button>
         </header>
 
-        {/* Desktop utility bar: app-wide controls belong with account/status actions, not buried in primary navigation. */}
-        <header className="hidden md:flex sticky top-0 z-30 h-[60px] items-center justify-between border-b border-border bg-background/82 px-6 backdrop-blur-xl xl:px-8">
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground font-mono">Consultin workspace</p>
-            <p className="mt-0.5 truncate text-sm font-semibold text-foreground font-['Plus_Jakarta_Sans']">
-              {screen === "briefreview" ? copy.reviewTitle : screen === "history" ? copy.history : screen === "subscription" ? "Subscription" : screen === "account" ? copy.account : copy.dashboard}
-            </p>
-          </div>
-          <button type="button" onClick={() => onNavigate("account")}
-            className="flex h-10 items-center gap-2 rounded-full border border-border/70 bg-card/78 px-3 text-[12px] font-semibold text-foreground shadow-[0_10px_24px_rgba(12,24,40,0.06)] ring-1 ring-white/70 transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary font-['Plus_Jakarta_Sans']">
-            <User size={15} />
-            <span>{copy.user}</span>
-          </button>
-        </header>
 
         <main id="main-content" className="flex-1 min-w-0 overflow-auto pb-24 md:pb-0 relative z-10">
           {children}
@@ -1408,7 +1370,7 @@ function HomeView({ onSubmit, onOpenReport, analysisCount, language }: { onSubmi
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary font-mono">{copy.dashboardBriefInitial}</p>
-                <p className="mt-1 text-sm font-semibold text-foreground font-['Plus_Jakarta_Sans']">{language === "id" ? "Mulai dari kalimat mentah, Consultin susun dossier awal." : "Start with a raw sentence, Consultin drafts the dossier."}</p>
+                <p className="mt-1 text-sm font-semibold text-foreground font-['Plus_Jakarta_Sans']">{language === "id" ? "Mulai dari kalimat mentah. Consultin susun brief awal." : "Start with a raw sentence. Consultin drafts the first brief."}</p>
               </div>
               <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary font-mono">{copy.quotaSafeText}</span>
             </div>
@@ -1423,7 +1385,7 @@ function HomeView({ onSubmit, onOpenReport, analysisCount, language }: { onSubmi
               />
               <div className="mt-3 border-t border-border pt-3">
                 <p className="text-[12px] leading-relaxed text-muted-foreground font-['Plus_Jakarta_Sans']">
-                  {language === "id" ? "Tulis bebas seperti chat biasa. Consultin baru menanyakan detail tambahan setelah brief awal dikirim." : "Write freely like a normal chat. Consultin asks for extra details only after the first brief is submitted."}
+                  {language === "id" ? "Tulis bebas seperti chat. Detail tambahan ditanya setelah brief dikirim." : "Write freely like chat. Extra details come after submit."}
                 </p>
               </div>
             </div>
@@ -1451,7 +1413,7 @@ function HomeView({ onSubmit, onOpenReport, analysisCount, language }: { onSubmi
                   <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-warning/18 text-warning"><AlertTriangle size={15} /></span>
                   <div>
                     <p className="text-[13px] font-bold font-['Plus_Jakarta_Sans']">{language === "id" ? "Informasi kurang untuk analisis tajam." : "More information needed for sharper analysis."}</p>
-                    <p className="mt-1 text-[13px] leading-relaxed font-['Plus_Jakarta_Sans']">{language === "id" ? "Brief awal sudah tersusun. Lengkapi pertanyaan wajib sebelum agent processing memakai kuota." : "Initial brief is drafted. Complete required questions before agent processing uses quota."}</p>
+                    <p className="mt-1 text-[13px] leading-relaxed font-['Plus_Jakarta_Sans']">{language === "id" ? "Brief awal siap. Lengkapi pertanyaan wajib sebelum kuota dipakai." : "First brief ready. Complete required questions before quota is used."}</p>
                   </div>
                 </div>
               </div>
@@ -1460,7 +1422,7 @@ function HomeView({ onSubmit, onOpenReport, analysisCount, language }: { onSubmi
             <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <span className="flex size-7 items-center justify-center rounded-lg border border-border bg-background"><MapPin size={13} /></span>
-                <span className="text-[12px] font-['Plus_Jakarta_Sans']">{clarifying ? (language === "id" ? "AI menemukan detail yang perlu dilengkapi." : "AI found details that need completion.") : (language === "id" ? "Tidak ada parameter wajib sebelum kirim." : "No required parameters before submit.")}</span>
+                <span className="text-[12px] font-['Plus_Jakarta_Sans']">{clarifying ? (language === "id" ? "Ada detail yang perlu dilengkapi." : "Some details need completion.") : (language === "id" ? "Tidak ada isian wajib sebelum kirim." : "No required fields before submit.")}</span>
               </div>
               <button
                 onClick={handleAsk} disabled={!query.trim()}
@@ -1499,7 +1461,7 @@ function HomeView({ onSubmit, onOpenReport, analysisCount, language }: { onSubmi
             <div className="overflow-hidden rounded-2xl bg-card ring-1 ring-border shadow-[0_18px_45px_rgba(12,24,40,0.05)]">
               {recentAnalyses.map((item, index) => (
                 <button key={item.topic} onClick={() => onOpenReport(item.topic)}
-                  className={cn("group grid w-full grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 text-left transition-[background,transform] duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-primary/10/70 active:scale-[0.995] sm:grid-cols-[1fr_5.5rem_6rem]", index > 0 && "border-t border-border")}>
+                  className={cn("group grid w-full grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 text-left transition-[background,transform] duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-primary/10 active:scale-[0.995] sm:grid-cols-[1fr_5.5rem_6rem]", index > 0 && "border-t border-border")}>
                   <div className="min-w-0">
                     <div className="mb-1 flex items-center gap-2">
                       <span className="rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground font-['Plus_Jakarta_Sans']">{item.tag}</span>
@@ -2235,7 +2197,7 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
   ];
 
   const SLIDES: React.ReactNode[] = [
-    // 0 — Cover
+    // 0 · Cover
     <div key={0} className="h-full flex flex-col justify-between p-10 md:p-14 bg-gradient-to-br from-[#0B1628] via-[#0D1E3A] to-[#1A3B6E] text-white">
       <div className="flex items-center gap-3">
         <ImageWithFallback src={ConsultinLogo} alt="Consultin" className="h-7 w-auto object-contain brightness-0 invert opacity-70" />
@@ -2258,10 +2220,10 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
       </div>
     </div>,
 
-    // 1 — Situation
+    // 1 · Situation
     <div key={1} className="h-full flex flex-col p-8 md:p-12 bg-white">
       <div className="mb-6">
-        <p className="text-[11px] font-mono text-primary uppercase tracking-widest mb-1">01 — Situation</p>
+        <p className="text-[11px] font-mono text-primary uppercase tracking-widest mb-1">01 · Situation</p>
         <h2 className="text-2xl md:text-3xl font-bold font-['Plus_Jakarta_Sans'] text-[#0D1829]">Kondisi Pasar Saat Ini</h2>
       </div>
       <div className="grid grid-cols-3 gap-4 mb-6">
@@ -2289,10 +2251,10 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
       </div>
     </div>,
 
-    // 2 — Complication
+    // 2 · Complication
     <div key={2} className="h-full flex flex-col p-8 md:p-12 bg-white">
       <div className="mb-6">
-        <p className="text-[11px] font-mono text-amber-500 uppercase tracking-widest mb-1">02 — Complication</p>
+        <p className="text-[11px] font-mono text-amber-500 uppercase tracking-widest mb-1">02 · Complication</p>
         <h2 className="text-2xl md:text-3xl font-bold font-['Plus_Jakarta_Sans'] text-[#0D1829]">Tantangan & Ancaman Utama</h2>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
@@ -2305,10 +2267,10 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
       </div>
     </div>,
 
-    // 3 — Consumer Voice
+    // 3 · Consumer Voice
     <div key={3} className="h-full flex flex-col p-8 md:p-12 bg-white">
       <div className="mb-6">
-        <p className="text-[11px] font-mono text-primary uppercase tracking-widest mb-1">03 — Analisis Sentimen</p>
+        <p className="text-[11px] font-mono text-primary uppercase tracking-widest mb-1">03 · Analisis Sentimen</p>
         <h2 className="text-2xl md:text-3xl font-bold font-['Plus_Jakarta_Sans'] text-[#0D1829]">Suara Konsumen</h2>
       </div>
       <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
@@ -2338,10 +2300,10 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
       </div>
     </div>,
 
-    // 4 — SWOT
+    // 4 · SWOT
     <div key={4} className="h-full flex flex-col p-8 md:p-12 bg-white">
       <div className="mb-5">
-        <p className="text-[11px] font-mono text-primary uppercase tracking-widest mb-1">04 — SWOT Analysis</p>
+        <p className="text-[11px] font-mono text-primary uppercase tracking-widest mb-1">04 · SWOT Analysis</p>
         <h2 className="text-2xl md:text-3xl font-bold font-['Plus_Jakarta_Sans'] text-[#0D1829]">Matriks SWOT</h2>
       </div>
       <div className="flex-1 grid grid-cols-2 gap-3">
@@ -2363,10 +2325,10 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
       </div>
     </div>,
 
-    // 5 — Resolution
+    // 5 · Resolution
     <div key={5} className="h-full flex flex-col p-8 md:p-12 bg-gradient-to-br from-[#0B1628] to-[#1A3B6E] text-white">
       <div className="mb-6">
-        <p className="text-[11px] font-mono text-primary uppercase tracking-widest mb-1">05 — Resolution</p>
+        <p className="text-[11px] font-mono text-primary uppercase tracking-widest mb-1">05 · Resolution</p>
         <h2 className="text-2xl md:text-3xl font-bold font-['Plus_Jakarta_Sans']">Rekomendasi Strategis</h2>
       </div>
       <div className="flex-1 space-y-3">
@@ -2385,10 +2347,10 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
       </div>
     </div>,
 
-    // 6 — Financials
+    // 6 · Financials
     <div key={6} className="h-full flex flex-col p-8 md:p-12 bg-white">
       <div className="mb-6">
-        <p className="text-[11px] font-mono text-primary uppercase tracking-widest mb-1">06 — Proyeksi Finansial</p>
+        <p className="text-[11px] font-mono text-primary uppercase tracking-widest mb-1">06 · Proyeksi Finansial</p>
         <h2 className="text-2xl md:text-3xl font-bold font-['Plus_Jakarta_Sans'] text-[#0D1829]">Revenue Forecast 2026</h2>
       </div>
       <div className="flex-1">
@@ -2405,10 +2367,10 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
       </div>
     </div>,
 
-    // 7 — Risk
+    // 7 · Risk
     <div key={7} className="h-full flex flex-col p-8 md:p-12 bg-white">
       <div className="mb-6">
-        <p className="text-[11px] font-mono text-amber-500 uppercase tracking-widest mb-1">07 — Risk Register</p>
+        <p className="text-[11px] font-mono text-amber-500 uppercase tracking-widest mb-1">07 · Risk Register</p>
         <h2 className="text-2xl md:text-3xl font-bold font-['Plus_Jakarta_Sans'] text-[#0D1829]">Matriks Risiko</h2>
       </div>
       <div className="flex-1 space-y-3">
@@ -2428,10 +2390,10 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
       </div>
     </div>,
 
-    // 8 — Action Plan
+    // 8 · Action Plan
     <div key={8} className="h-full flex flex-col p-8 md:p-12 bg-white">
       <div className="mb-6">
-        <p className="text-[11px] font-mono text-primary uppercase tracking-widest mb-1">08 — Action Plan</p>
+        <p className="text-[11px] font-mono text-primary uppercase tracking-widest mb-1">08 · Action Plan</p>
         <h2 className="text-2xl md:text-3xl font-bold font-['Plus_Jakarta_Sans'] text-[#0D1829]">90-Day Roadmap</h2>
       </div>
       <div className="flex-1 grid grid-cols-3 gap-4">
@@ -2454,10 +2416,10 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
       </div>
     </div>,
 
-    // 9 — Conclusion
+    // 9 · Conclusion
     <div key={9} className="h-full flex flex-col justify-between p-10 md:p-14 bg-gradient-to-br from-[#0B1628] to-[#1A3B6E] text-white">
       <div>
-        <p className="text-[11px] font-mono text-primary uppercase tracking-widest mb-2">09 — Kesimpulan</p>
+        <p className="text-[11px] font-mono text-primary uppercase tracking-widest mb-2">09 · Kesimpulan</p>
         <h2 className="text-3xl font-bold font-['Plus_Jakarta_Sans'] mb-6">Peluang Nyata, Tindakan Segera</h2>
         <p className="text-white/70 text-[15px] font-['Plus_Jakarta_Sans'] leading-relaxed max-w-lg">
           Pasar kafe di Dago layak diuji melalui peluncuran kecil, bukan ekspansi besar sejak hari pertama. Skor kelayakan 82/100 dan sentimen positif 71% cukup kuat untuk memulai validasi 90 hari, dengan fokus pada menu, komunitas, dan disiplin biaya.
@@ -2756,7 +2718,7 @@ function AccountView({ mode = "account", onLogout, language, onLanguageChange, t
                   className={cn(`rounded-full px-5 py-1.5 text-[12px] font-semibold transition-all duration-200 ${JK} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70`,
                     billing === mode ? "bg-white text-[#14385E] shadow-[0_2px_12px_rgba(0,0,0,0.22),0_0_0_1px_rgba(255,255,255,0.1)]" : "text-white/50 hover:text-white/80")}
                 >
-                  {mode === "monthly" ? "Bulanan" : "Tahunan — hemat 20%"}
+                  {mode === "monthly" ? "Bulanan" : "Tahunan, hemat 20%"}
                 </button>
               ))}
             </div>
