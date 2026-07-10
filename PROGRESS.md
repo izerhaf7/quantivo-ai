@@ -8,53 +8,65 @@
 
 **Owner:** Faiz (Scraping Lead)  
 **Last Updated:** 2026-07-10  
-**Branch:** `feature/scraping-modules`  
-**Status:** v1 Complete — Real API tested, 6 modules
+**Branch:** `faiz/scraping-v1`  
+**Status:** v1 Complete — 9 modules, real API tested, .env integrated
 
 ---
 
 ## Summary
 
-Scraping module v1 complete. **6 data source modules** + ScraperRunner orchestrator. Real API tested with Tavily + SerpApi + BrightData — 30 items collected for "Kue Pancong di Kecamatan Tapos, Kota Depok". TikTok competitor discovery identifies 4+ competitors in Depok, zero in Tapos.
+Scraping module v1 complete. **9 data source modules** + ScraperRunner orchestrator. API keys loaded automatically from `.env` file (no manual env vars needed). Real API tested with Tavily + SerpApi + BrightData — 30 items collected for "Kue Pancong di Kecamatan Tapos, Kota Depok".
 
 ---
 
 ## What Was Built
 
-### 1. Scraper Modules (6 modules)
+### 1. Scraper Modules (9 modules)
 
-| Module | File | SourceType | API Key | Real Tested |
-|--------|------|-----------|---------|-------------|
-| PlacesModule | `modules/places.py` | REVIEW, PLACES_LISTING | `GOOGLE_PLACES_API_KEY` | — |
-| WebSearchModule | `modules/web_search.py` | NEWS, BLOG, ARTICLE | `TAVILY_API_KEY` / `BRAVE_SEARCH_API_KEY` | ✅ |
-| TrendsModule | `modules/trends.py` | TRENDS | `SERPAPI_API_KEY` | ✅ |
-| BpsModule | `modules/bps.py` | BPS_STAT | `BPS_API_KEY` | — |
-| DataboksModule | `modules/databoks.py` | DATABOKS | `DATABOKS_API_KEY` | — |
-| **BrightDataTiktokModule** | `modules/brightdata.py` | SOCIAL | `BRIGHTDATA_API_KEY` | ✅ |
+| # | Module | File | SourceType | Provider | Key |
+|---|--------|------|-----------|----------|-----|
+| 1 | PlacesModule | `modules/places.py` | REVIEW, PLACES_LISTING | Google Places | `GOOGLE_PLACES_API_KEY` |
+| 2 | WebSearchModule | `modules/web_search.py` | NEWS, BLOG, ARTICLE | Tavily + Brave | `TAVILY_API_KEY` |
+| 3 | TrendsModule | `modules/trends.py` | TRENDS | SerpApi | `SERPAPI_API_KEY` |
+| 4 | BpsModule | `modules/bps.py` | BPS_STAT | BPS WebAPI | `BPS_API_KEY` |
+| 5 | DataboksModule | `modules/databoks.py` | DATABOKS | Databoks API | `DATABOKS_API_KEY` |
+| 6 | **BrightDataTiktokModule** | `modules/brightdata.py` | SOCIAL | BrightData | `BRIGHTDATA_API_KEY` |
+| 7 | **FacebookSearchModule** | `modules/facebook_search.py` | FORUM | SocialAPIs | `SOCIALAPIS_API_KEY` |
+| 8 | **InstagramModule** | `modules/instagram.py` | REVIEW | BrightData | `BRIGHTDATA_API_KEY` |
+| 9 | **XModule** | `modules/x_twitter.py` | NEWS | BrightData | `BRIGHTDATA_API_KEY` |
 
-### 2. ScraperRunner Orchestrator
+### 2. .env Integration
+
+**File:** `.env` (gitignored)  
+**Loader:** `scraping/__init__.py` → `_load_dotenv()`
+
+- Zero-dependency dotenv loader (no python-dotenv needed)
+- Auto-loads `.env` from repo root on `import scraping`
+- Env vars already set in shell take precedence over `.env`
+- All 4 active keys loaded: Tavily, SerpApi, BrightData, SocialAPIs
+
+### 3. ScraperRunner Orchestrator
 
 **File:** `scraping/runner.py`
 
 - Parallel execution via `asyncio.gather`
 - Deduplication by place_id (Places) or content hash
-- Circuit-breaker: 180s timeout per module (increased for BrightData async)
+- Circuit-breaker: 180s timeout per module
 - Health reporting for degradation notes
 - `create_runner(use_mocks=True/False)` factory
 
-### 3. Bug Fixes
+### 4. Bug Fixes
 
 | Bug | Fix | File |
 |-----|-----|------|
 | BPS `_make_item` crashes on None value | Defensive check: None/non-numeric → "N/A" | `modules/bps.py:263-267` |
-| `WebSearchModule.__init__` NameError | `tavily_key` → `tavily_api_key`, `brave_key` → `brave_api_key` | `modules/web_search.py:48-49` |
-| Runner timeout too short for BrightData | Increased per-module timeout from 60s to 180s | `runner.py:132` |
+| `WebSearchModule.__init__` NameError | `tavily_key` → `tavily_api_key` | `modules/web_search.py:48-49` |
+| Runner timeout too short for BrightData | 60s → 180s | `runner.py:132` |
 
-### 4. Demo Script
+### 5. Demo Script
 
 **File:** `scraping/demo_kue_pancong.py`
 - E2E demo: scraper (mocks) → router → print results
-- Tests full pipeline with "Kue Pancong Tapos Depok" scope
 
 ---
 
@@ -83,64 +95,50 @@ Source counts:
 
 | Competitor | Location | Evidence |
 |------------|----------|----------|
-| WarPan (@warungpancong.id) | Pancoran Mas, Depok | TikTok viral, topping banyak |
+| WarPan (@warungpancong.id) | Pancoran Mas, Depok | TikTok viral |
 | Pacong Balap | GDC Depok | TikTok review |
-| Pancong Lumer Amoca | Depok | 2,447 likes TikTok |
+| Pancong Lumer Amoca | Depok | 2,447 likes |
 | Warung Pancong Mang Kumis | Jl. Komodo Raya, Beji | Eksis sejak 1980-an |
 
 **Gap identified:** Belum ada kompetitor kue pancong di Kecamatan Tapos.
 
-### Google Trends
+---
 
-- "Kue pancong": tren **naik +13.8%**
-- "cafe": tren naik +11.4%
-- "kopi": tren turun -8.1%
+## Commits (branch `faiz/scraping-v1`)
+
+```
+fd4f263 chore: add .env to gitignore
+58ca81e feat(scraping): add Facebook, Instagram, X/Twitter modules
+32a8d29 feat(scraping): add BrightData TikTok module, fix bugs, real API tested
+0d0bb9a feat(scraping): add Kue pancong demo test script
+bce703b fix(scraping): also accept numeric-string bps values, refresh evidence
+d87e28d fix(scraping): defensive value formatting in bps.py _make_item
+```
 
 ---
 
-## Files Created/Modified
-
-| File | Type | Purpose |
-|------|------|---------|
-| `scraping/modules/brightdata.py` | **New** | BrightData TikTok Scraper |
-| `scraping/modules/web_search.py` | Fixed | NameError in __init__ |
-| `scraping/modules/bps.py` | Fixed | Defensive value formatting |
-| `scraping/modules/__init__.py` | Modified | Added BrightDataTiktokModule export |
-| `scraping/runner.py` | Modified | Added BrightData wiring + timeout increase |
-| `scraping/demo_kue_pancong.py` | **New** | E2E demo script |
-| `scraping/README.md` | Modified | Updated with 6 modules + real test results |
-| `PROGRESS.md` | Modified | Updated with v1 status |
-
----
-
-## Dependencies
-
-- `tenacity>=9.1.4` (retry/circuit-breaker for API calls)
-- `httpx` (async HTTP client, already in pyproject.toml)
-
----
-
-## Environment Variables
+## Environment Setup
 
 ```bash
-export GOOGLE_PLACES_API_KEY="..."
-export TAVILY_API_KEY="..."
-export BRAVE_SEARCH_API_KEY="..."
-export SERPAPI_API_KEY="..."
-export BPS_API_KEY="..."
-export DATABOKS_API_KEY="..."
-export BRIGHTDATA_API_KEY="..."
+# .env file (gitignored, keys auto-loaded on import)
+TAVILY_API_KEY=tvly-dev-...
+SERPAPI_API_KEY=aa48f5f...
+BRIGHTDATA_API_KEY=17b06a3f-...
+SOCIALAPIS_API_KEY=2cac26b...
+GOOGLE_PLACES_API_KEY=        # optional
+BRAVE_SEARCH_API_KEY=         # optional
+BPS_API_KEY=                  # optional
+DATABOKS_API_KEY=             # optional
 ```
 
 ---
 
 ## Next Steps
 
-1. **Google Places** — untuk kompetitor physical locations di Tapos
+1. **Google Places** — kompetitor physical locations di Tapos
 2. **BPS** — statistik pengeluaran makanan Depok
-3. **SocialAPIs Facebook** — social listening via Facebook posts
-4. **Integrate with orchestrator** (Razan)
-5. **Docker setup** untuk submission
+3. **Integrate with orchestrator** (Razan)
+4. **Docker setup** untuk submission
 
 ---
 
