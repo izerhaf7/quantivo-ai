@@ -1280,43 +1280,44 @@ function HomeView({ onSubmit, onOpenReport, analysisCount, language }: { onSubmi
   };
 
   return (
-    <div className="min-h-full">
-      <div className="mx-auto max-w-4xl px-6 py-8 md:px-8">
+    <div className="relative min-h-full overflow-hidden bg-[#030712] text-white">
+      <div className="pointer-events-none absolute inset-x-[-20%] top-[-34rem] h-[58rem] rounded-full border-[9rem] border-[#2A74C4] opacity-40 blur-[92px]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-96 bg-[linear-gradient(to_right,rgba(255,255,255,0.14)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:68px_78px] [mask-image:radial-gradient(55%_55%,white,transparent)]" />
+      <div className="pointer-events-none absolute left-[12%] top-16 h-72 w-[76%] rounded-full bg-[#206ce8] opacity-35 blur-[120px] mix-blend-screen" />
+
+      <div className="relative z-10 mx-auto max-w-6xl px-4 pb-24 pt-14 sm:px-6 md:px-8 md:pt-20">
         {/* Greeting */}
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary font-mono">Workspace</p>
-            <h1 className="mb-1.5 text-2xl font-semibold text-foreground font-['Plus_Jakarta_Sans'] md:text-3xl">
-              {copy.dashboardTable}
-            </h1>
-            <p className="max-w-[58ch] text-sm leading-relaxed text-muted-foreground font-['Plus_Jakarta_Sans']">{copy.dashboardDesc}</p>
-          </div>
-          <span className="w-fit rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[12px] font-semibold text-primary font-mono">
-            Free · {3 - analysisCount} {copy.remainingQuota}
+        <div className="mx-auto mb-7 max-w-3xl text-center">
+          <span className="mb-4 inline-flex rounded-full border border-white/12 bg-white/6 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#9CC8EF] font-mono">
+            Workspace · Free {3 - analysisCount} {copy.remainingQuota}
           </span>
+          <h1 className="mx-auto mb-3 max-w-2xl text-3xl font-semibold leading-tight text-white font-['Plus_Jakarta_Sans'] md:text-5xl">
+            {copy.dashboardTable}
+          </h1>
+          <p className="mx-auto max-w-[58ch] text-sm leading-relaxed text-white/62 font-['Plus_Jakarta_Sans']">{copy.dashboardDesc}</p>
         </div>
 
         {/* Query card */}
-        <div className="mb-6 overflow-hidden rounded-[1.8rem] border border-primary/15 bg-card shadow-[0_24px_70px_rgba(12,24,40,0.08)]">
-          <div className="border-b border-border bg-[linear-gradient(135deg,rgba(42,116,196,0.14),rgba(110,168,216,0.07),rgba(16,43,70,0.04))] px-5 py-4">
+        <div className="mb-6 overflow-hidden rounded-[1.8rem] border border-white/10 bg-gradient-to-r from-neutral-950 via-[#101827] to-neutral-950 text-white shadow-[0_-20px_180px_rgba(9,0,255,0.34)]">
+          <div className="border-b border-white/10 bg-white/[0.035] px-5 py-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary font-mono">{copy.dashboardBriefInitial}</p>
-                <p className="mt-1 text-sm font-semibold text-foreground font-['Plus_Jakarta_Sans']">{language === "id" ? "Mulai dari kalimat mentah. Consultin susun brief awal." : "Start with a raw sentence. Consultin drafts the first brief."}</p>
+                <p className="mt-1 text-sm font-semibold text-white font-['Plus_Jakarta_Sans']">{language === "id" ? "Mulai dari kalimat mentah. Consultin susun brief awal." : "Start with a raw sentence. Consultin drafts the first brief."}</p>
               </div>
               <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary font-mono">{copy.quotaSafeText}</span>
             </div>
           </div>
           <div className="p-5">
-            <div className="rounded-[1.35rem] border border-border bg-background/70 p-4 focus-within:border-primary/35 focus-within:ring-4 focus-within:ring-primary/10">
+            <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.055] p-4 focus-within:border-[#2A74C4]/70 focus-within:ring-4 focus-within:ring-[#2A74C4]/20">
               <textarea
                 value={query} onChange={(e) => { setQuery(e.target.value); setClarifying(false); }}
                 placeholder={copy.dashboardPromptPlaceholder}
                 rows={4}
-                className="w-full resize-none bg-transparent text-[15px] leading-relaxed text-foreground outline-none placeholder:text-muted-foreground font-['Plus_Jakarta_Sans']"
+                className="w-full resize-none bg-transparent text-[15px] leading-relaxed text-white outline-none placeholder:text-white/36 font-['Plus_Jakarta_Sans']"
               />
-              <div className="mt-3 border-t border-border pt-3">
-                <p className="text-[12px] leading-relaxed text-muted-foreground font-['Plus_Jakarta_Sans']">
+              <div className="mt-3 border-t border-white/10 pt-3">
+                <p className="text-[12px] leading-relaxed text-white/50 font-['Plus_Jakarta_Sans']">
                   {language === "id" ? "Tulis bebas seperti chat. Detail tambahan ditanya setelah brief dikirim." : "Write freely like chat. Extra details come after submit."}
                 </p>
               </div>
@@ -1351,9 +1352,9 @@ function HomeView({ onSubmit, onOpenReport, analysisCount, language }: { onSubmi
               </div>
             )}
 
-            <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <span className="flex size-7 items-center justify-center rounded-lg border border-border bg-background"><MapPin size={13} /></span>
+            <div className="mt-4 flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2 text-white/50">
+                <span className="flex size-7 items-center justify-center rounded-lg border border-white/10 bg-white/6"><MapPin size={13} /></span>
                 <span className="text-[12px] font-['Plus_Jakarta_Sans']">{clarifying ? (language === "id" ? "Ada detail yang perlu dilengkapi." : "Some details need completion.") : (language === "id" ? "Tidak ada isian wajib sebelum kirim." : "No required fields before submit.")}</span>
               </div>
               <button
@@ -1368,13 +1369,13 @@ function HomeView({ onSubmit, onOpenReport, analysisCount, language }: { onSubmi
         {/* Quick suggestions */}
         <div className="mb-8">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <p className="text-[12px] font-semibold text-foreground font-['Plus_Jakarta_Sans']">{copy.suggestionsTitle}</p>
-            <p className="text-[11px] text-muted-foreground font-['Plus_Jakarta_Sans']">{copy.suggestionsDesc}</p>
+            <p className="text-[12px] font-semibold text-white font-['Plus_Jakarta_Sans']">{copy.suggestionsTitle}</p>
+            <p className="text-[11px] text-white/45 font-['Plus_Jakarta_Sans']">{copy.suggestionsDesc}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             {suggestions.map(s => (
               <button key={s} onClick={() => setQuery(s)}
-                className="min-h-10 rounded-full border border-border bg-card px-3.5 py-1.5 text-[13px] text-foreground transition-[background,border-color,transform] hover:border-primary/45 hover:bg-primary/10 active:scale-[0.98] font-['Plus_Jakarta_Sans']">
+                className="min-h-10 rounded-full border border-white/10 bg-white/[0.055] px-3.5 py-1.5 text-[13px] text-white/82 transition-[background,border-color,transform] hover:border-[#2A74C4]/65 hover:bg-[#2A74C4]/16 active:scale-[0.98] font-['Plus_Jakarta_Sans']">
                 {s}
               </button>
             ))}
@@ -1386,20 +1387,20 @@ function HomeView({ onSubmit, onOpenReport, analysisCount, language }: { onSubmi
           <section aria-labelledby="recent-analyses">
             <div className="mb-3 flex items-end justify-between gap-3">
               <div>
-                <h2 id="recent-analyses" className="text-sm font-semibold text-foreground font-['Plus_Jakarta_Sans']">{copy.recentAnalysesTitle}</h2>
-                <p className="mt-0.5 text-xs text-muted-foreground font-['Plus_Jakarta_Sans']">{copy.recentAnalysesDesc}</p>
+                <h2 id="recent-analyses" className="text-sm font-semibold text-white font-['Plus_Jakarta_Sans']">{copy.recentAnalysesTitle}</h2>
+                <p className="mt-0.5 text-xs text-white/45 font-['Plus_Jakarta_Sans']">{copy.recentAnalysesDesc}</p>
               </div>
             </div>
-            <div className="overflow-hidden rounded-2xl bg-card ring-1 ring-border shadow-[0_18px_45px_rgba(12,24,40,0.05)]">
+            <div className="overflow-hidden rounded-2xl bg-white/[0.055] ring-1 ring-white/10 shadow-[0_18px_65px_rgba(0,0,0,0.28)]">
               {recentAnalyses.map((item, index) => (
                 <button key={item.topic} onClick={() => onOpenReport(item.topic)}
-                  className={cn("group grid w-full grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 text-left transition-[background,transform] duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-primary/10 active:scale-[0.995] sm:grid-cols-[1fr_5.5rem_6rem]", index > 0 && "border-t border-border")}>
+                  className={cn("group grid w-full grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 text-left transition-[background,transform] duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-[#2A74C4]/16 active:scale-[0.995] sm:grid-cols-[1fr_5.5rem_6rem]", index > 0 && "border-t border-white/10")}>
                   <div className="min-w-0">
                     <div className="mb-1 flex items-center gap-2">
-                      <span className="rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground font-['Plus_Jakarta_Sans']">{item.tag}</span>
-                      <span className="text-[11px] text-muted-foreground font-['Plus_Jakarta_Sans']">{item.date}</span>
+                      <span className="rounded-md bg-white/8 px-2 py-0.5 text-[11px] font-medium text-white/55 font-['Plus_Jakarta_Sans']">{item.tag}</span>
+                      <span className="text-[11px] text-white/42 font-['Plus_Jakarta_Sans']">{item.date}</span>
                     </div>
-                    <p className="truncate text-[13px] font-semibold text-foreground font-['Plus_Jakarta_Sans'] group-hover:text-primary">{item.topic}</p>
+                    <p className="truncate text-[13px] font-semibold text-white font-['Plus_Jakarta_Sans'] group-hover:text-[#9CC8EF]">{item.topic}</p>
                   </div>
                   <span className={cn("hidden text-[12px] font-semibold sm:block", (item.sentiment === "Positif" || item.sentiment === "Positive") ? "text-success" : "text-warning")}>{item.sentiment}</span>
                   <span className="justify-self-end rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground font-mono">{item.score}/100</span>
