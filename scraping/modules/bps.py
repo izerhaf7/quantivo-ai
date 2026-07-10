@@ -260,9 +260,14 @@ class BpsModule:
 
         label = label_map.get(dataset, dataset.replace("_", " ").title())
 
+        if isinstance(value, (int, float)):
+            value_render = f"{value:,.0f}"
+        else:
+            value_render = "N/A"
+
         raw_text = (
             f"Data BPS: {label} di {loc.province or loc.city or 'Indonesia'} "
-            f"({tahun}): {value:,.0f} {satuan}."
+            f"({tahun}): {value_render} {satuan}."
         )
 
         return RawDataItem(
