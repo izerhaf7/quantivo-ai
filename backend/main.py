@@ -13,9 +13,9 @@ from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI, HTTPException
 
 from contracts import (
-    BusinessInput, ScopeConfig, AnalysisStatus,
+    BusinessInput, AnalysisStatus,
     CreateAnalysisResponse, AnalysisStatusResponse, ProgressStage,
-    Report, Visualizations,
+    Report,
 )
 from orchestrator import OrchestratorImpl
 from store import JobStore
