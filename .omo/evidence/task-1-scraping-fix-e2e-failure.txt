@@ -1,0 +1,28 @@
+COMMAND: set "PYTHONPATH=contracts;scraping;ml" && uv run python -c "from scraping.modules.bps import BpsModule; from contracts import ScopeConfig, BusinessInput, Location, IndustryCategory, BusinessStage; scope=ScopeConfig(business_input=BusinessInput(business_type='x', description='y', location=Location(city='Depok', province='Jawa Barat'), category=IndustryCategory.FOOD_BEVERAGE, radius_km=3.0, business_stage=BusinessStage.NEW), interpreted_summary='x', search_keywords=['x'], competitor_query='x', expires_at=__import__('datetime').datetime.now(__import__('datetime').timezone.utc)); BpsModule()._make_item(scope, 'test', {'data': {}}, scope.business_input.location)"
+OUTPUT:
+cmd : Traceback (most recent call last):
+At line:1 char:707
++ ... }}, scope.business_input.location)"'; $out = cmd /c $cmd 2>&1; $code  ...
++                                                  ~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "<string>", line 1, in <module>
+    from scraping.modules.bps import BpsModule; from contracts import ScopeConfig, BusinessInput, Location, IndustryCat
+egory, BusinessStage; scope=ScopeConfig(business_input=BusinessInput(business_type='x', description='y', location=Locat
+ion(city='Depok', province='Jawa Barat'), category=IndustryCategory.FOOD_BEVERAGE, radius_km=3.0, business_stage=Busine
+ssStage.NEW), interpreted_summary='x', search_keywords=['x'], competitor_query='x', expires_at=__import__('datetime').d
+atetime.now(__import__('datetime').timezone.utc)); BpsModule()._make_item(scope, 'test', {'data': {}}, scope.business_i
+nput.location)
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                   ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^
+  File "C:\Users\faiza\quantivo-ai\scraping\modules\bps.py", line 265, in _make_item
+    f"({tahun}): {value:,.0f} {satuan}."
+                 ^^^^^^^^^^^^
+TypeError: unsupported format string passed to NoneType.__format__
+
+EXIT_CODE: 1

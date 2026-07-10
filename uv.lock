@@ -50,6 +50,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "qdrant-client" },
+    { name = "tenacity" },
     { name = "uvicorn" },
 ]
 
@@ -61,6 +62,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.13" },
     { name = "python-dotenv", specifier = ">=1.0" },
     { name = "qdrant-client", specifier = ">=1.11" },
+    { name = "tenacity", specifier = ">=9.1.4" },
     { name = "uvicorn", specifier = ">=0.47" },
 ]
 

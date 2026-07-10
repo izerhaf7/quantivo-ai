@@ -1,0 +1,36 @@
+Task 2 — scraping/demo_kue_pancong.py development-time import failures.
+
+## Failure A — contracts/__init__.py shadowing package
+
+When the demo added the contracts/ directory itself to sys.path, the directory
+became a top-level "contracts" module that had no __init__.py, so
+
+    ModuleNotFoundError: No module named 'contracts.interfaces'; 'contracts' is not a package
+
+Fix: only add the repo ROOT (the parent that contains the contracts/ package) to
+sys.path. Never add the contracts/ directory itself.
+
+Also PYTHONPATH must include the repo root so `from contracts import ...` resolves
+the package, not the shim.
+
+## Failure B — `_now` not re-exported by contracts/__init__.py
+
+contracts/__init__.py uses `from contracts.contracts import *` which excludes
+underscore-prefixed names. ml/router.py does `from contracts import _now`,
+therefore `ImportError: cannot import name '_now' from 'contracts'`.
+
+Fix in the demo script (without modifying ml/ or contracts/):
+
+    import contracts as contracts_package
+    from contracts.contracts import _now
+    setattr(contracts_package, "_now", _now)
+    ... then import ml.router / ml.embeddings
+
+This restores _now on the already-imported `contracts` package so router's
+`from contracts import _now` succeeds.
+
+## Verifier
+
+    $env:PYTHONPATH = ".;contracts;ml"
+    uv run --no-sync python scraping/demo_kue_pancong.py
+    # -> EXIT=0, prints SCRAPER OK then ROUTER OK
