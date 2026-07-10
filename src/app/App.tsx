@@ -408,16 +408,16 @@ const REPORT_DATA = {
     { name: "Target UMKM", score: 68, share: 6, growth: "Baru" },
   ],
   swot: {
-    strengths: ["Lokasi strategis dekat kampus ITB & Unpad", "Konsep specialty coffee yang unik & Instagram-worthy", "Harga premium terjangkau (Rp 32–58k)"],
+    strengths: ["Lokasi strategis dekat kampus ITB & Unpad", "Konsep specialty coffee yang unik & Instagram-worthy", "Harga premium terjangkau (Rp 32-58k)"],
     weaknesses: ["Brand awareness masih rendah vs. chain nasional", "Kapasitas seating terbatas (max 40 pax)", "Keterbatasan modal untuk ekspansi"],
     opportunities: ["Pertumbuhan komunitas coffee enthusiast Bandung +34% YoY", "Tren work-from-café pasca pandemi belum jenuh", "Potensi kolaborasi dengan local roaster"],
     threats: ["Masuknya chain nasional Kopi Kenangan di koridor Dago", "Kenaikan harga biji kopi arabica +22% (2026)", "Regulasi UMKM digital belum jelas"],
   },
   priorities: [
-    { rank: 1, title: "Perbaiki kehadiran digital", impact: "Tinggi", effort: "Rendah", timeframe: "0–3 bln" },
-    { rank: 2, title: "Uji program loyalitas", impact: "Tinggi", effort: "Sedang", timeframe: "1–4 bln" },
+    { rank: 1, title: "Perbaiki kehadiran digital", impact: "Tinggi", effort: "Rendah", timeframe: "0-3 bln" },
+    { rank: 2, title: "Uji program loyalitas", impact: "Tinggi", effort: "Sedang", timeframe: "1-4 bln" },
     { rank: 3, title: "Susun ulang margin menu", impact: "Sedang", effort: "Rendah", timeframe: "Segera" },
-    { rank: 4, title: "Validasi pivot work-from-café", impact: "Tinggi", effort: "Tinggi", timeframe: "6–12 bln" },
+    { rank: 4, title: "Validasi pivot work-from-café", impact: "Tinggi", effort: "Tinggi", timeframe: "6-12 bln" },
   ],
   risks: [
     { risk: "Kenaikan harga bahan baku", prob: "Tinggi", impact: "Sedang", mitigation: "Kontrak jangka panjang dengan supplier" },
@@ -516,76 +516,15 @@ function AuthSplit({ children, title, subtitle, language, onLanguageChange, them
   const ThemeIcon = theme === "dark" ? Moon : Sun;
 
   return (
-    <div className="min-h-[100dvh] flex flex-col lg:flex-row bg-background bg-[radial-gradient(circle_at_50%_-10%,rgba(42,116,196,0.10),transparent_34%),linear-gradient(180deg,rgba(255,254,250,0.72),rgba(246,244,239,0))]">
-      {/* Left brand panel */}
-      <div className="hidden lg:flex lg:w-[400px] xl:w-[460px] shrink-0 bg-[#0C1828] flex-col justify-between border-r border-white/5 relative overflow-hidden">
-        {/* Bezel mesh gradient */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(42,116,196,0.15),transparent_40%)]" />
-        <div className="p-7 relative z-10" />
-
-        <div className="flex-1 flex flex-col justify-center px-10 pb-10 relative z-10">
-          <div className="mb-8">
-            <ImageWithFallback src={CLogoImg} alt="Consultin" className="h-14 w-14 object-contain mb-8" />
-            <h2 className="text-[28px] font-bold font-['Plus_Jakarta_Sans'] text-white leading-snug mb-3">
-              Ruang kerja keputusan<br />untuk UMKM Indonesia
-            </h2>
-            <p className="text-white/55 text-[13px] font-['Plus_Jakarta_Sans'] leading-relaxed">
-              Susun brief, cek asumsi, dan simpan laporan bisnis dalam satu alur yang tenang.
-            </p>
-          </div>
-          <div className="space-y-3.5 border-t border-white/10 pt-6">
-            {["Brief ditinjau sebelum kuota dipakai", "Riwayat laporan mudah dibuka ulang", "Bahasa dan tema ada di pengaturan"].map((label) => (
-              <div key={label} className="flex items-center gap-3">
-                <span className="h-px w-6 bg-primary" />
-                <p className="text-white/65 text-[13px] font-['Plus_Jakarta_Sans']">{label}</p>
-              </div>
-            ))}
-          </div>
+    <div className="min-h-[100dvh] flex flex-col bg-background bg-[radial-gradient(circle_at_50%_-10%,rgba(42,116,196,0.10),transparent_34%),linear-gradient(180deg,rgba(255,254,250,0.72),rgba(246,244,239,0))]">
+      <header className="border-b border-border bg-card/60 px-6 py-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-40">
+        <div className="flex items-center gap-2.5">
+          <ImageWithFallback src={CLogoImg} alt="Consultin" className="w-6 h-6 object-contain" />
+          <span className="font-bold text-sm font-['Plus_Jakarta_Sans'] text-foreground">Consultin</span>
         </div>
-        <div className="p-7 border-t border-white/5 relative z-10">
-          <p className="text-white/25 text-[11px] font-['Plus_Jakarta_Sans'] text-center">
-            Consultin
-          </p>
-        </div>
-      </div>
+      </header>
 
-      {/* Right form area */}
-      <div className="flex-1 flex flex-col min-h-dvh">
-        {/* Responsive Header with Language & Theme Toggles */}
-        <header className="border-b border-border bg-card/60 px-6 py-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-40">
-          <div className="flex items-center gap-2.5 lg:hidden">
-            <ImageWithFallback src={CLogoImg} alt="Consultin" className="w-6 h-6 object-contain" />
-            <span className="font-bold text-sm font-['Plus_Jakarta_Sans'] text-foreground">Consultin</span>
-          </div>
-          <div className="flex items-center gap-2.5">
-            {/* Lang toggles */}
-            <div className="flex rounded-full bg-muted p-0.5 border border-border/10 shadow-xs">
-              {(["id", "en"] as const).map((lang) => (
-                <button
-                  key={lang}
-                  onClick={() => onLanguageChange(lang)}
-                  aria-pressed={language === lang}
-                  className={cn(
-                    "rounded-full px-2 py-0.5 text-[9.5px] font-bold min-h-6 min-w-8 flex items-center justify-center transition-all cursor-pointer",
-                    language === lang ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {lang.toUpperCase()}
-                </button>
-              ))}
-            </div>
-            {/* Theme toggle */}
-            <button
-              onClick={() => onThemeChange(theme === "dark" ? "light" : "dark")}
-              aria-label={theme === "dark" ? copy.themeDark : copy.themeLight}
-              className="flex size-8 items-center justify-center rounded-full bg-muted text-foreground transition-all hover:bg-muted/80 cursor-pointer shadow-xs"
-            >
-              <ThemeIcon size={14} />
-            </button>
-          </div>
-        </header>
-
-        <div className="flex-1 flex items-center justify-center p-6 md:p-12 relative">
+      <div className="flex-1 flex items-center justify-center p-6 md:p-12 relative">
           <div className="w-full max-w-[420px] relative z-10">
             {title && (
               <div className="mb-8">
@@ -596,7 +535,6 @@ function AuthSplit({ children, title, subtitle, language, onLanguageChange, them
             {children}
           </div>
         </div>
-      </div>
     </div>
   );
 }
@@ -730,14 +668,8 @@ function SplashView({ language }: { language: Language }) {
   const copy = UI_COPY[language];
   return (
     <div className="min-h-[100dvh] bg-[#0B1628] flex flex-col items-center justify-center gap-5">
-      <div className="relative animate-pulse">
-        <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl scale-150" />
-        <ImageWithFallback src={CLogoImg} alt="Consultin" className="relative w-20 h-20 object-contain" />
-      </div>
-      <div className="text-center">
-        <p className="text-white/80 text-lg font-bold font-['Plus_Jakarta_Sans'] tracking-wide">Consultin</p>
-        <p className="text-white/35 text-xs font-['Plus_Jakarta_Sans'] mt-1 tracking-widest uppercase">{copy.splashSubtitle}</p>
-      </div>
+      <ImageWithFallback src={ConsultinLogo} alt="Consultin" className="h-9 w-auto object-contain brightness-0 invert opacity-90 motion-safe:animate-pulse" />
+      <p className="text-white/35 text-xs font-['Plus_Jakarta_Sans'] tracking-widest uppercase">{copy.splashSubtitle}</p>
     </div>
   );
 }
@@ -844,7 +776,7 @@ function FollowUpPreview() {
         <p className="mt-2 text-sm font-semibold text-foreground font-['Plus_Jakarta_Sans']">Berapa rentang modal awal yang ingin dianalisis?</p>
       </div>
       <div className="grid gap-2 sm:grid-cols-3">
-        {["< Rp50jt", "Rp50–150jt", "> Rp150jt"].map((item, i) => (
+        {["< Rp50jt", "Rp50-150jt", "> Rp150jt"].map((item, i) => (
           <button key={item} aria-pressed={i === 1} className={cn("min-h-11 rounded-xl border px-3 py-2 text-sm font-semibold transition-colors font-['Plus_Jakarta_Sans'] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", i === 1 ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-foreground hover:bg-muted")}>{item}</button>
         ))}
       </div>
@@ -965,7 +897,7 @@ function OnboardingView({ onFinish }: { onFinish: () => void }) {
                   onClick={() => setSlide(i)}
                   aria-current={i === slide ? "step" : undefined}
                   aria-label={`Langkah ${i + 1} dari ${OB_SLIDES.length}: ${item.title}`}
-                  className={cn("group flex min-h-12 w-full items-center gap-3 rounded-[1.05rem] px-3 py-2.5 text-left transition-[background,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", i === slide ? "bg-background shadow-[inset_0_0_0_1px_rgba(138,72,47,0.18),0_10px_24px_rgba(12,24,40,0.06)]" : "hover:bg-muted/70")}
+                  className={cn("group flex min-h-12 w-full items-center gap-3 rounded-[1.05rem] px-3 py-2.5 text-left transition-[background,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", i === slide ? "bg-background shadow-[inset_0_0_0_1px_rgba(42,116,196,0.18),0_10px_24px_rgba(12,24,40,0.06)]" : "hover:bg-muted/70")}
                 >
                   <span className={cn("flex size-8 items-center justify-center rounded-xl border text-[11px] font-bold font-mono transition-colors", i === slide ? "border-primary/30 bg-primary text-primary-foreground" : "border-border bg-background text-muted-foreground group-hover:text-foreground")}>{i + 1}</span>
                   <span className="min-w-0">
@@ -988,8 +920,8 @@ function OnboardingView({ onFinish }: { onFinish: () => void }) {
           </section>
 
           <section className="order-1 lg:order-2">
-            <div className="relative overflow-hidden rounded-[2rem] border border-primary/12 bg-card/90 p-4 shadow-[0_22px_70px_-44px_rgba(179,94,46,0.45)] ring-1 ring-white/40 sm:p-6 dark:ring-white/5">
-              <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(179,94,46,0.055)_1px,transparent_1px),linear-gradient(to_bottom,rgba(179,94,46,0.055)_1px,transparent_1px)] bg-[size:28px_28px]" />
+            <div className="relative overflow-hidden rounded-[2rem] border border-primary/12 bg-card/90 p-4 shadow-[0_22px_70px_-44px_rgba(42,116,196,0.36)] ring-1 ring-white/40 sm:p-6 dark:ring-white/5">
+              <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(42,116,196,0.055)_1px,transparent_1px),linear-gradient(to_bottom,rgba(42,116,196,0.055)_1px,transparent_1px)] bg-[size:28px_28px]" />
               <div className="relative min-h-[430px] rounded-[1.5rem] border border-primary/10 bg-background/88 p-4 sm:min-h-[480px] sm:p-5 lg:min-h-[560px]">
                 <div className="mb-4 flex items-center justify-between gap-3 border-b border-border pb-3">
                   <div>
@@ -1334,10 +1266,10 @@ function HomeView({ onSubmit, onOpenReport, analysisCount, language }: { onSubmi
   const [clarifying, setClarifying] = useState(false);
   const lowerQuery = query.toLowerCase();
   const extractedBrief = [
-    { label: language === "id" ? "Industri" : "Industry", value: lowerQuery.includes("kafe") || lowerQuery.includes("cafe") ? "F&B / cafe" : lowerQuery.includes("laundry") ? "Services / laundry" : lowerQuery.includes("minimarket") ? "Retail / minimarket" : "—", complete: /kafe|cafe|laundry|minimarket|warung/.test(lowerQuery) },
-    { label: language === "id" ? "Lokasi" : "Location", value: lowerQuery.includes("dago") ? "Dago, Bandung" : lowerQuery.includes("depok") ? "Depok" : lowerQuery.includes("bekasi") ? "Bekasi" : lowerQuery.includes("sunter") ? "Sunter, Jakarta" : "—", complete: /dago|depok|bekasi|sunter|bandung|jakarta/.test(lowerQuery) },
-    { label: language === "id" ? "Pelanggan" : "Customer", value: lowerQuery.includes("mahasiswa") ? "Mahasiswa" : lowerQuery.includes("remote") ? "Remote workers" : lowerQuery.includes("b2b") ? "B2B" : lowerQuery.includes("b2c") ? "B2C" : "—", complete: /mahasiswa|remote|b2b|b2c|pekerja|customer|pelanggan/.test(lowerQuery) },
-    { label: language === "id" ? "Tujuan" : "Goal", value: lowerQuery.includes("kompetitor") ? "Competitor scan" : lowerQuery.includes("modal") ? "Capital planning" : lowerQuery.includes("analisis") || lowerQuery.includes("analysis") ? "Market analysis" : "—", complete: /kompetitor|modal|analisis|analysis|kelayakan|feasibility/.test(lowerQuery) },
+    { label: language === "id" ? "Industri" : "Industry", value: lowerQuery.includes("kafe") || lowerQuery.includes("cafe") ? "F&B / cafe" : lowerQuery.includes("laundry") ? "Services / laundry" : lowerQuery.includes("minimarket") ? "Retail / minimarket" : "-", complete: /kafe|cafe|laundry|minimarket|warung/.test(lowerQuery) },
+    { label: language === "id" ? "Lokasi" : "Location", value: lowerQuery.includes("dago") ? "Dago, Bandung" : lowerQuery.includes("depok") ? "Depok" : lowerQuery.includes("bekasi") ? "Bekasi" : lowerQuery.includes("sunter") ? "Sunter, Jakarta" : "-", complete: /dago|depok|bekasi|sunter|bandung|jakarta/.test(lowerQuery) },
+    { label: language === "id" ? "Pelanggan" : "Customer", value: lowerQuery.includes("mahasiswa") ? "Mahasiswa" : lowerQuery.includes("remote") ? "Remote workers" : lowerQuery.includes("b2b") ? "B2B" : lowerQuery.includes("b2c") ? "B2C" : "-", complete: /mahasiswa|remote|b2b|b2c|pekerja|customer|pelanggan/.test(lowerQuery) },
+    { label: language === "id" ? "Tujuan" : "Goal", value: lowerQuery.includes("kompetitor") ? "Competitor scan" : lowerQuery.includes("modal") ? "Capital planning" : lowerQuery.includes("analisis") || lowerQuery.includes("analysis") ? "Market analysis" : "-", complete: /kompetitor|modal|analisis|analysis|kelayakan|feasibility/.test(lowerQuery) },
   ];
   const completedBrief = extractedBrief.filter((item) => item.complete).length;
 
@@ -2399,7 +2331,7 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
       <div className="flex-1 grid grid-cols-3 gap-4">
         {[
           { phase: "Bulan 1", color: "var(--primary)", items: ["Audit digital presence", "Setup Google My Business", "Mulai loyalty program beta"] },
-          { phase: "Bulan 2–3", color: "#1F6F64", items: ["Launch Instagram Ads", "Implement menu engineering", "Onboard 500 loyalty members"] },
+          { phase: "Bulan 2-3", color: "#1F6F64", items: ["Launch Instagram Ads", "Implement menu engineering", "Onboard 500 loyalty members"] },
           { phase: "Bulan 3+", color: "#0B7A6A", items: ["Evaluasi co-working pivot", "Ekspansi ke outlet ke-2", "Scale digital marketing"] },
         ].map(({ phase, color, items }) => (
           <div key={phase} className="p-4 rounded-xl border-2" style={{ borderColor: `${color}30`, background: `${color}08` }}>
@@ -2633,7 +2565,14 @@ const TIERS = [
 
 function AccountView({ mode = "account", onLogout, language, onLanguageChange, theme, onThemeChange }: { mode?: "account" | "subscription"; onLogout: () => void; language: Language; onLanguageChange: (l: Language) => void; theme: ThemeMode; onThemeChange: (t: ThemeMode) => void }) {
   const [billing, setBilling] = useState<"monthly" | "yearly">("yearly");
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const ThemeIcon = theme === "dark" ? Moon : Sun;
+  const saveSettings = () => {
+    if (saveState !== "idle") return;
+    setSaveState("saving");
+    window.setTimeout(() => setSaveState("saved"), 500);
+    window.setTimeout(() => setSaveState("idle"), 2200);
+  };
 
   return (
     <div className="min-h-full">
@@ -2697,6 +2636,15 @@ function AccountView({ mode = "account", onLogout, language, onLanguageChange, t
                 <ThemeIcon size={15} />
                 {theme === "dark" ? "Mode terang" : "Mode gelap"}
               </button>
+            </div>
+            <div className="mt-4 flex items-center gap-3">
+              <button type="button" onClick={saveSettings} disabled={saveState !== "idle"}
+                className="h-10 rounded-full bg-primary px-4 text-[12px] font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                {saveState === "saving" ? "Menyimpan" : saveState === "saved" ? "Tersimpan" : "Simpan perubahan"}
+              </button>
+              <span className="text-[12px] text-muted-foreground" role="status" aria-live="polite">
+                {saveState === "idle" ? "Tidak ada perubahan tertunda" : saveState === "saved" ? "Pengaturan tersimpan" : ""}
+              </span>
             </div>
           </div>
         </div>
@@ -2816,7 +2764,9 @@ export default function App() {
 
   useEffect(() => {
     if (screen === "splash") {
-      const t = setTimeout(() => setScreen("onboarding"), 2200);
+      const done = localStorage.getItem("consultin-onboarded") === "1";
+      const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      const t = setTimeout(() => setScreen(done ? "login" : "onboarding"), reduced ? 350 : 1400);
       return () => clearTimeout(t);
     }
   }, [screen]);
@@ -2861,7 +2811,7 @@ export default function App() {
   if (isAuth) {
     switch (screen) {
       case "splash": return <SplashView language={language} />;
-      case "onboarding": return <OnboardingView onFinish={() => navigate("login")} language={language} />;
+      case "onboarding": return <OnboardingView onFinish={() => { localStorage.setItem("consultin-onboarded", "1"); navigate("login"); }} language={language} />;
       case "login": return <LoginView onLogin={() => { frontendAdapter.signIn("email"); navigate("home"); }} onSignup={() => navigate("signup")} onForgot={() => navigate("forgotpassword")} language={language} theme={theme} onThemeChange={setTheme} onLanguageChange={setLanguage} />;
       case "signup": return <SignupView onRegister={() => { frontendAdapter.signIn("email"); navigate("phonenumber"); }} onSignIn={() => navigate("login")} language={language} theme={theme} onThemeChange={setTheme} onLanguageChange={setLanguage} />;
       case "phonenumber": return <PhoneNumberView onVerify={() => navigate("phoneverify")} onLater={() => navigate("home")} language={language} theme={theme} onThemeChange={setTheme} onLanguageChange={setLanguage} />;
