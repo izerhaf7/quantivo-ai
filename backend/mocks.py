@@ -3,9 +3,13 @@ backend/mocks.py — offline default Retriever (interfaces.Retriever).
 
 Holds the Chunks for ONE pipeline run. A new instance is constructed per
 job in orchestrator.py — never shared across concurrent analyses, since
-retrieve() has no scope-filtering of its own (mirrors ml/run_demo.py's
-inline MockRetriever). Swap point for production: ml/retriever.py's
-QdrantRetriever.
+retrieve() has no scope-filtering of its own (this part mirrors
+ml/run_demo.py's inline MockRetriever). ingest() here is NOT a mirror,
+though: it actually extends self.chunks, unlike run_demo.py's no-op
+version -- orchestrator.py never calls ingest() today (chunks go straight
+into the constructor), so this is currently dormant, but don't assume the
+two MockRetrievers are interchangeable. Swap point for production:
+ml/retriever.py's QdrantRetriever.
 """
 from __future__ import annotations
 

@@ -24,7 +24,12 @@ def _key(scope_id: str) -> str:
 
 class JobStore:
     def __init__(self, redis_url: str):
-        self._redis = redis.Redis.from_url(redis_url, decode_responses=True)
+        self._redis = redis.Redis.from_url(
+            redis_url,
+            decode_responses=True,
+            socket_connect_timeout=5,
+            socket_timeout=5,
+        )
 
     async def close(self) -> None:
         await self._redis.aclose()

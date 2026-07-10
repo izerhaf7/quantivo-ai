@@ -11,6 +11,7 @@ import os
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 from contracts import (
     BusinessInput, AnalysisStatus,
@@ -45,6 +46,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="BOA SaaS API", version="1.0.0", lifespan=lifespan)
+
+_cors_origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000").split(",")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[o.strip() for o in _cors_origins if o.strip()],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 def get_store() -> JobStore:
@@ -84,11 +93,15 @@ async def confirm_analysis(
     job = await store.get(analysis_id)
     if job is None:
         raise HTTPException(404, "analysis not found")
+    if job["status"] != AnalysisStatus.AWAITING_CONFIRMATION:
+        raise HTTPException(
+            409, f"analysis already {job['status'].value}, cannot confirm again")
     await store.set_status(analysis_id, AnalysisStatus.CONFIRMED)
     # TODO(arq): ganti create_task -> enqueue ke arq worker (durable). Lihat
     # docs/superpowers/specs/2026-07-10-backend-orchestrator-design.md.
     asyncio.create_task(orchestrator.run(job["scope"]))
-    return await _status_response(analysis_id, store)
+    job["status"] = AnalysisStatus.CONFIRMED
+    return await _status_response(analysis_id, store, job=job)
 
 
 @app.get("/api/analyses/{analysis_id}", response_model=AnalysisStatusResponse)
@@ -98,7 +111,7 @@ async def get_status(
     job = await store.get(analysis_id)
     if job is None:
         raise HTTPException(404, "analysis not found")
-    return await _status_response(analysis_id, store)
+    return await _status_response(analysis_id, store, job=job)
 
 
 @app.get("/api/analyses/{analysis_id}/report", response_model=Report)
@@ -113,12 +126,16 @@ async def get_report(
     return job["report"]
 
 
-async def _status_response(analysis_id: str, store: JobStore) -> AnalysisStatusResponse:
-    job = await store.get(analysis_id)
+async def _status_response(
+    analysis_id: str, store: JobStore, job: dict | None = None
+) -> AnalysisStatusResponse:
+    if job is None:
+        job = await store.get(analysis_id)
     st: AnalysisStatus = job["status"]
     return AnalysisStatusResponse(
         analysis_id=analysis_id,
         status=st,
         progress=ProgressStage(status=st, pct=_STAGE_PCT[st], message=st.value),
         sections_ready=job["sections_ready"],
+        error=job["error"],
     )

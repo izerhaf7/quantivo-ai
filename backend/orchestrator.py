@@ -16,6 +16,7 @@ mocks.py for why it must not be shared across concurrent jobs.
 from __future__ import annotations
 
 import json
+import logging
 from datetime import timedelta
 from pathlib import Path
 
@@ -34,6 +35,8 @@ from router import DataRouter
 
 from mocks import MockRetriever
 from store import JobStore
+
+logger = logging.getLogger(__name__)
 
 FIXTURES = Path(__file__).resolve().parent.parent / "fixtures" / "raw_data_items.sample.json"
 
@@ -108,16 +111,20 @@ class OrchestratorImpl:
             await self.store.set_status(scope.scope_id, AnalysisStatus.ANALYZING)
             report = await run_analysis(graph, scope, market_notes=market_notes)
 
+            # report (and thus sections_ready, derived from it) is persisted
+            # before COMPOSING/final status flips, so a client polling
+            # mid-write never observes sections_ready without a fetchable
+            # report behind it.
+            await self.store.set_status(scope.scope_id, AnalysisStatus.COMPOSING)
+            await self.store.set_report(scope.scope_id, report)
             sections = [name for name, val in
                         (("sentiment", report.sentiment), ("swot", report.swot))
                         if val is not None]
             await self.store.set_sections_ready(scope.scope_id, sections)
-
-            await self.store.set_status(scope.scope_id, AnalysisStatus.COMPOSING)
-            await self.store.set_report(scope.scope_id, report)
             await self.store.set_status(scope.scope_id, report.status)
             return report
         except Exception as e:                       # noqa: BLE001
+            logger.exception("Pipeline failed for scope %s", scope.scope_id)
             await self.store.set_status(scope.scope_id, AnalysisStatus.FAILED)
             await self.store.set_error(scope.scope_id, str(e))
             failed_report = Report(
