@@ -2575,82 +2575,81 @@ function AccountView({ mode = "account", onLogout, language, onLanguageChange, t
   };
 
   return (
-    <div className={cn("min-h-full", mode === "subscription" && "bg-[#03040a]")}>
-      {mode === "account" && (
-        <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-6 md:px-8 py-4 flex items-center justify-between">
-          <h1 className={`text-lg font-bold text-foreground ${JK}`}>Akun & Pengaturan</h1>
-          <button onClick={onLogout} className={`flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors ${JK}`}>
-            <LogOut size={15} /> Keluar
-          </button>
-        </div>
-      )}
-
-      <div className={cn("w-full", mode === "subscription" ? "p-0" : "px-6 md:px-8 py-6")}>
+    <div className={cn("min-h-full", (mode === "subscription" || mode === "account") && "bg-[#03040a]")}>
+      <div className={cn("w-full", mode === "subscription" || mode === "account" ? "p-0" : "px-6 md:px-8 py-6")}>
         {mode === "account" && (
-          <>
-        <div className="bg-card rounded-[1.6rem] border border-border p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5 mb-8 shadow-[0_18px_48px_-34px_rgba(32,33,29,0.28)]">
-          <div className="w-14 h-14 rounded-2xl bg-primary/12 ring-1 ring-primary/20 flex items-center justify-center shrink-0">
-            <User size={24} className="text-primary" />
-          </div>
-          <div className="flex-1">
-            <h2 className={`text-lg font-bold text-foreground ${JK}`}>CEO Account</h2>
-            <p className={`text-muted-foreground text-[13px] ${JK}`}>free@consultin.id</p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {[
-              { label: "Analisis", val: "1", sub: "dari 3" },
-              { label: "Member Sejak", val: "Jul 2026", sub: "" },
-            ].map(({ label, val, sub }) => (
-              <div key={label} className="bg-background rounded-xl px-4 py-2.5 border border-border text-center">
-                <p className={`text-[15px] font-bold font-mono text-foreground`}>{val} <span className={`text-muted-foreground text-[11px] font-normal ${JK}`}>{sub}</span></p>
-                <p className={`text-[11px] text-muted-foreground ${JK}`}>{label}</p>
+          <section className="relative min-h-full overflow-hidden bg-[#030712] px-6 py-7 text-white md:px-8">
+            <div className="pointer-events-none absolute inset-x-[-22%] top-[-32rem] h-[56rem] rounded-full border-[8rem] border-[#3131f5]/40 blur-[96px]" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-[linear-gradient(to_right,rgba(255,255,255,0.11)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:70px_80px] [mask-image:radial-gradient(50%_50%,white,transparent)]" />
+            <div className="relative mx-auto max-w-5xl">
+              <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className={`text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6EA8D8] ${JK}`}>Account</p>
+                  <h1 className={`mt-2 text-2xl font-semibold tracking-[-0.03em] text-white ${JK}`}>Akun & Pengaturan</h1>
+                  <p className={`mt-1 text-sm text-white/48 ${JK}`}>Identitas, kuota, dan preferensi bahasa.</p>
+                </div>
+                <button onClick={onLogout} className={`inline-flex h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[0.055] px-4 text-[12px] font-semibold text-white/70 transition hover:bg-white/[0.085] hover:text-white ${JK}`}>
+                  <LogOut size={14} /> Keluar
+                </button>
               </div>
-            ))}
-          </div>
-        </div>
 
-        <div className="mb-8 grid gap-4 lg:grid-cols-[1fr_1fr]">
-          <div className="bg-card rounded-xl border border-border p-5">
-            <div className="flex items-center justify-between mb-3">
-              <p className={`text-[13px] font-semibold text-foreground ${JK}`}>Penggunaan Bulan Ini</p>
-              <span className="text-[13px] font-mono text-muted-foreground">1 / 3 analisis</span>
-            </div>
-            <div className="h-2.5 bg-white/10 rounded-full overflow-hidden">
-              <div className="h-full bg-primary rounded-full transition-all" style={{ width: "33%" }} />
-            </div>
-            <p className={`text-[12px] text-muted-foreground mt-2 ${JK}`}>Reset pada 1 Agustus 2026</p>
-          </div>
-
-          <div className="bg-card rounded-xl border border-border p-5">
-            <p className={`text-[13px] font-semibold text-foreground ${JK}`}>Pengaturan Web</p>
-            <p className={`mt-1 text-[12px] text-muted-foreground ${JK}`}>Bahasa dan tampilan dipindahkan ke area akun agar workspace tetap bersih.</p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <div className="flex rounded-full bg-muted p-1 border border-border/70">
-                {(["id", "en"] as const).map((next) => (
-                  <button key={next} type="button" aria-pressed={language === next} onClick={() => onLanguageChange(next)}
-                    className={cn("h-9 min-w-11 rounded-full px-3 text-[11px] font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary", language === next ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
-                    {next.toUpperCase()}
-                  </button>
-                ))}
+              <div className="mb-5 rounded-[1.7rem] border border-white/10 bg-white/[0.055] p-5 shadow-[0_24px_90px_rgba(0,0,0,0.28)]">
+                <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+                  <div className="flex size-14 items-center justify-center rounded-2xl border border-blue-400/30 bg-blue-500/15 text-blue-100">
+                    <User size={24} />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className={`text-lg font-semibold text-white ${JK}`}>CEO Account</h2>
+                    <p className={`mt-1 text-[13px] text-white/46 ${JK}`}>free@consultin.id</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 sm:w-72">
+                    {[
+                      { label: "Analisis", val: "1", sub: "dari 3" },
+                      { label: "Member Sejak", val: "Jul 2026", sub: "" },
+                    ].map(({ label, val, sub }) => (
+                      <div key={label} className="rounded-2xl border border-white/10 bg-black/22 px-4 py-3 text-center">
+                        <p className="font-mono text-[15px] font-bold text-white">{val} <span className={`text-[11px] font-normal text-white/42 ${JK}`}>{sub}</span></p>
+                        <p className={`mt-1 text-[11px] text-white/42 ${JK}`}>{label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <button type="button" onClick={() => onThemeChange(theme === "dark" ? "light" : "dark")}
-                className="flex h-11 items-center gap-2 rounded-full border border-border bg-background px-4 text-[12px] font-semibold text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-                <ThemeIcon size={15} />
-                {theme === "dark" ? "Mode terang" : "Mode gelap"}
-              </button>
+
+              <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
+                <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.055] p-5">
+                  <div className="mb-3 flex items-center justify-between">
+                    <p className={`text-[13px] font-semibold text-white ${JK}`}>Penggunaan Bulan Ini</p>
+                    <span className="font-mono text-[13px] text-white/50">1 / 3 analisis</span>
+                  </div>
+                  <div className="h-2.5 overflow-hidden rounded-full bg-white/10">
+                    <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-300" style={{ width: "33%" }} />
+                  </div>
+                  <p className={`mt-2 text-[12px] text-white/45 ${JK}`}>Reset pada 1 Agustus 2026</p>
+                </div>
+
+                <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.055] p-5">
+                  <p className={`text-[13px] font-semibold text-white ${JK}`}>Bahasa Workspace</p>
+                  <p className={`mt-1 text-[12px] text-white/45 ${JK}`}>Tema utama dikunci dulu agar tampilan stabil. Light theme direncanakan setelah semua halaman konsisten.</p>
+                  <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {([
+                      ["id", "🇮🇩", "Indonesia"],
+                      ["en", "🇺🇸", "English"],
+                    ] as const).map(([next, flag, label]) => (
+                      <button key={next} type="button" aria-pressed={language === next} onClick={() => onLanguageChange(next)}
+                        className={cn("min-h-12 rounded-2xl border px-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300", language === next ? "border-blue-400/60 bg-blue-500/18 text-white shadow-[0_14px_42px_rgba(37,99,235,0.20)]" : "border-white/10 bg-black/18 text-white/58 hover:bg-white/[0.075] hover:text-white")}>
+                        <span className="mr-2 text-base" aria-hidden="true">{flag}</span>
+                        <span className={`text-[12px] font-semibold ${JK}`}>{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-4 rounded-2xl border border-amber-300/18 bg-amber-300/8 p-3">
+                    <p className={`text-[12px] leading-relaxed text-amber-100/80 ${JK}`}>Multi bahasa penuh (中文, 日本語, 한국어, العربية, dll.) butuh i18n dictionary/API agar seluruh copy, laporan, dan export ikut berubah. Selector siap diperluas setelah dictionary masuk.</p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="mt-4 flex items-center gap-3">
-              <button type="button" onClick={saveSettings} disabled={saveState !== "idle"}
-                className="h-10 rounded-full bg-primary px-4 text-[12px] font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-                {saveState === "saving" ? "Menyimpan" : saveState === "saved" ? "Tersimpan" : "Simpan perubahan"}
-              </button>
-              <span className="text-[12px] text-muted-foreground" role="status" aria-live="polite">
-                {saveState === "idle" ? "Tidak ada perubahan tertunda" : saveState === "saved" ? "Pengaturan tersimpan" : ""}
-              </span>
-            </div>
-          </div>
-        </div>
-          </>
+          </section>
         )}
 
         {mode === "subscription" && (
