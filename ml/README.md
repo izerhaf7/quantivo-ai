@@ -40,6 +40,7 @@ LangGraph hanya merangkai; setiap agent mematuhi Protocol di
 | `run_demo.py` | Bukti pipeline penuh end-to-end: fixtures → `DataRouter` → `chunking` → `MockRetriever` → graph agent |
 | `retriever_demo.py` | Bukti `QdrantRetriever` end-to-end: fixtures → `DataRouter` → `chunking` → ingest → hybrid search → filter track, via Qdrant in-memory + `MockEmbeddingClient` |
 | `router_demo.py` | Bukti `DataRouter` jalan terhadap fixtures — verifikasi eksplisit item #5 (post kripto, off-topic+asing+basi) ter-DISCARD, item lain kept, dan jalur dedup |
+| `llm_demo.py` | Bukti `FireworksLLMClient` sungguhan (bukan Mock) — sama pipeline `run_demo.py` tapi LLM nyata di AMD MI300X/MI350, model dibagi kecil (sentiment, per-chunk) vs besar (SWOT+Summary, per-report). Butuh `FIREWORKS_API_KEY` (lihat `.env.example`) |
 
 ### `DataRouter` (`router.py`)
 
@@ -78,7 +79,7 @@ pemahaman semantik) kadang salah menilai relevansi item yang leksikal jauh
 dari teks intent (mis. statistik makro tanpa kata "kopi") — itu keterbatasan
 mock yang jujur, bukan bug router. BGE-M3 asli akan jauh lebih akurat.
 
-## Jalankan demo (offline, tanpa API key)
+## Jalankan demo
 
 Dependensi dikelola via `uv` (lihat `pyproject.toml` di root repo).
 
@@ -95,14 +96,30 @@ PYTHONPATH="contracts;ml" uv run python ml/retriever_demo.py
 PYTHONPATH="contracts;ml" uv run python ml/router_demo.py
 ```
 
+`run_demo.py`, `retriever_demo.py`, `router_demo.py` di atas jalan **offline,
+tanpa API key** (semua Mock). `llm_demo.py` beda — butuh key sungguhan:
+
+```bash
+cp .env.example .env   # isi FIREWORKS_API_KEY, jangan commit .env
+PYTHONPATH="contracts;ml" uv run python ml/llm_demo.py
+```
+
 ## Titik swap Mock → Produksi (hanya di wiring, logika agent tak berubah)
 
 | Mock (demo) | Produksi |
 |---|---|
-| `MockLLMClient()` | `FireworksLLMClient(model=...)` (set `FIREWORKS_API_KEY`) |
+| `MockLLMClient()` | `FireworksLLMClient(model=...)` (set `FIREWORKS_API_KEY`) — pakai model KECIL (7-8B) utk `SentimentAgentImpl` (dipanggil per-chunk), model BESAR (70B) utk `SwotAgentImpl`/`SummaryAgentImpl` (sekali per report). Lihat `llm_demo.py` |
 | `MockRetriever(chunks)` | `QdrantRetriever(embedder=..., url="http://<qdrant-host>:6333")` (`retriever.py`) |
 | `MockEmbeddingClient()` | `TEIEmbeddingClient()` (server self-host BGE-M3, set `EMBEDDING_BASE_URL`) atau `LocalBGEM3EmbeddingClient()` (dev lokal via `FlagEmbedding`) |
 | `HeuristicRerankAgent()` | BGE-reranker-v2-m3 di dalam `rerank()` (cross-encoder) |
+
+**Catatan `FireworksLLMClient`**: sudah diwire lengkap (`llm.py`) dan siap
+jalan (`llm_demo.py`) begitu `FIREWORKS_API_KEY` diisi (kredit $50 dari AMD
+AI Developer Program, lihat `spesifikasi-teknis-boa-saas.md`). Status per
+dokumen ini: **BELUM dijalankan dengan key sungguhan** — beda dari
+`TEIEmbeddingClient` di bawah yang sudah. Begitu `llm_demo.py` sukses jalan,
+update catatan ini jadi "diverifikasi jalan nyata" + hasil aslinya, jangan
+biarkan dokumen bilang "belum" kalau sebenarnya sudah teruji.
 
 **Catatan `TEIEmbeddingClient`**: kontrak `/embed`-nya sudah **diverifikasi
 jalan nyata** terhadap model BGE-M3 sungguhan di GPU AMD asli (gfx1100/RDNA3,
@@ -147,13 +164,17 @@ Di dalam orchestrator (`api_stub.py::_run_pipeline`), setelah RAG ingestion:
 
 ```python
 from graph import build_agent_graph, run_analysis
+from llm import FireworksLLMClient
+
+fireworks_small = FireworksLLMClient(model="accounts/fireworks/models/llama-v3p1-8b-instruct")
+fireworks_large = FireworksLLMClient(model="accounts/fireworks/models/llama-v3p3-70b-instruct")
 
 graph = build_agent_graph(
     retriever=qdrant_retriever,
     rerank_agent=bge_rerank_agent,
-    sentiment_agent=SentimentAgentImpl(fireworks),
-    swot_agent=SwotAgentImpl(fireworks),
-    summary_agent=SummaryAgentImpl(fireworks),
+    sentiment_agent=SentimentAgentImpl(fireworks_small),  # per-chunk, volume tinggi
+    swot_agent=SwotAgentImpl(fireworks_large),             # sekali per report
+    summary_agent=SummaryAgentImpl(fireworks_large),
 )
 report = await run_analysis(graph, scope, market_notes=market_notes)
 # report: contracts.Report  -> langsung dikirim ke frontend

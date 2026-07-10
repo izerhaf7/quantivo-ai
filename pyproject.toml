@@ -9,6 +9,7 @@ dependencies = [
     "httpx>=0.28",
     "langgraph>=1.2.8",
     "qdrant-client>=1.11",
+    "python-dotenv>=1.0",
 ]
 
 [tool.uv]

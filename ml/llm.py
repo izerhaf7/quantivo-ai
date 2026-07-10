@@ -108,3 +108,5 @@ class MockLLMClient:
             "recommendations": ["Fokus diferensiasi (jam buka / produk khas) vs kompetitor",
                                 "Uji lokasi dengan traffic pekerja tertinggi lebih dulu"],
         }
+
+
