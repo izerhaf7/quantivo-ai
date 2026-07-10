@@ -6,6 +6,7 @@ Each module corresponds to a SourceType:
 - trends.py -> TRENDS
 - bps.py -> BPS_STAT
 - databoks.py -> DATABOKS
+- brightdata.py -> SOCIAL (TikTok)
 
 All modules implement the ScraperModule protocol:
     async def fetch(self, scope: ScopeConfig) -> list[RawDataItem]
@@ -19,6 +20,7 @@ from .web_search import WebSearchModule, MockWebSearchModule
 from .trends import TrendsModule, MockTrendsModule
 from .bps import BpsModule, MockBpsModule
 from .databoks import DataboksModule, MockDataboksModule
+from .brightdata import BrightDataTiktokModule, MockTiktokModule
 
 __all__ = [
     # Real implementations
@@ -27,10 +29,12 @@ __all__ = [
     "TrendsModule",
     "BpsModule",
     "DataboksModule",
+    "BrightDataTiktokModule",
     # Mock implementations (for testing without API keys)
     "MockPlacesModule",
     "MockWebSearchModule",
     "MockTrendsModule",
     "MockBpsModule",
     "MockDataboksModule",
+    "MockTiktokModule",
 ]

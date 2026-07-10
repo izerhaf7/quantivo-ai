@@ -131,7 +131,7 @@ class ScraperRunner:
                 # Add timeout per module (30s default)
                 items = await asyncio.wait_for(
                     module.fetch(scope),
-                    timeout=60.0,
+                    timeout=180.0,
                 )
 
                 healthy = module.is_healthy()
@@ -245,6 +245,7 @@ def create_runner(
             MockTrendsModule,
             MockBpsModule,
             MockDataboksModule,
+            MockTiktokModule,
         )
         return ScraperRunner(modules=[
             MockPlacesModule(),
@@ -252,6 +253,7 @@ def create_runner(
             MockTrendsModule(),
             MockBpsModule(),
             MockDataboksModule(),
+            MockTiktokModule(),
         ])
 
     from .modules import (
@@ -260,6 +262,7 @@ def create_runner(
         TrendsModule,
         BpsModule,
         DataboksModule,
+        BrightDataTiktokModule,
     )
 
     modules = []
@@ -278,14 +281,17 @@ def create_runner(
             modules.append(BpsModule(api_key=api_keys["bps"]))
         if api_keys.get("databoks"):
             modules.append(DataboksModule(api_key=api_keys["databoks"]))
+        if api_keys.get("brightdata"):
+            modules.append(BrightDataTiktokModule(api_key=api_keys["brightdata"]))
     else:
-        # Try to use env vars
+        # Try to use env vars — modules degrade gracefully if key is missing
         modules = [
             PlacesModule(),
             WebSearchModule(),
             TrendsModule(),
             BpsModule(),
             DataboksModule(),
+            BrightDataTiktokModule(),
         ]
 
     return ScraperRunner(modules=modules)

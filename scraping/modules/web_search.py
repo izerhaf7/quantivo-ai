@@ -45,8 +45,8 @@ class WebSearchModule:
         timeout: float = 30.0,
         max_results: int = 10,
     ):
-        self.tavily_key = tavily_key or os.getenv("TAVILY_API_KEY")
-        self.brave_key = brave_key or os.getenv("BRAVE_SEARCH_API_KEY")
+        self.tavily_key = tavily_api_key or os.getenv("TAVILY_API_KEY")
+        self.brave_key = brave_api_key or os.getenv("BRAVE_SEARCH_API_KEY")
         self.timeout = timeout
         self.max_results = max_results
         self._client: Optional[httpx.AsyncClient] = None

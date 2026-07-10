@@ -2,36 +2,35 @@
 
 **Project:** BOA SaaS (Business Opportunity Analysis)  
 **Event:** AMD Developer Hackathon: ACT II - Track Unicorn  
-**Deadline:** 7 Juli 2026  
-**Team:** 4 orang (Indra/Frontend, Razan/Backend, Izerhaf/AI-ML, Faiz/Scraping)  
-**Prize:** $2,500 (1st) / $1,500 (2nd) / $1,000 (3rd)
+**Team:** 4 orang (Indra/Frontend, Razan/Backend, Izerhaf/AI-ML, Faiz/Scraping)
 
 ---
 
 **Owner:** Faiz (Scraping Lead)  
-**Last Updated:** 2026-07-09  
+**Last Updated:** 2026-07-10  
 **Branch:** `feature/scraping-modules`  
-**Status:** Implementation Complete - Ready for Review
+**Status:** v1 Complete — Real API tested, 6 modules
 
 ---
 
 ## Summary
 
-Scraping module fully implemented following `contracts/interfaces.py` protocol. 5 data source modules + ScraperRunner orchestrator. All tested with mock data, 13 items collected across all sources.
+Scraping module v1 complete. **6 data source modules** + ScraperRunner orchestrator. Real API tested with Tavily + SerpApi + BrightData — 30 items collected for "Kue Pancong di Kecamatan Tapos, Kota Depok". TikTok competitor discovery identifies 4+ competitors in Depok, zero in Tapos.
 
 ---
 
 ## What Was Built
 
-### 1. Scraper Modules (5 modules)
+### 1. Scraper Modules (6 modules)
 
-| Module | File | SourceType | API Key | Status |
-|--------|------|-----------|---------|--------|
-| PlacesModule | `modules/places.py` | REVIEW, PLACES_LISTING | `GOOGLE_PLACES_API_KEY` | Mock tested |
-| WebSearchModule | `modules/web_search.py` | NEWS, BLOG, ARTICLE | `TAVILY_API_KEY` / `BRAVE_SEARCH_API_KEY` | Mock tested |
-| TrendsModule | `modules/trends.py` | TRENDS | `SERPAPI_API_KEY` | Mock tested |
-| BpsModule | `modules/bps.py` | BPS_STAT | `BPS_API_KEY` | Mock tested |
-| DataboksModule | `modules/databoks.py` | DATABOKS | `DATABOKS_API_KEY` | Mock tested |
+| Module | File | SourceType | API Key | Real Tested |
+|--------|------|-----------|---------|-------------|
+| PlacesModule | `modules/places.py` | REVIEW, PLACES_LISTING | `GOOGLE_PLACES_API_KEY` | — |
+| WebSearchModule | `modules/web_search.py` | NEWS, BLOG, ARTICLE | `TAVILY_API_KEY` / `BRAVE_SEARCH_API_KEY` | ✅ |
+| TrendsModule | `modules/trends.py` | TRENDS | `SERPAPI_API_KEY` | ✅ |
+| BpsModule | `modules/bps.py` | BPS_STAT | `BPS_API_KEY` | — |
+| DataboksModule | `modules/databoks.py` | DATABOKS | `DATABOKS_API_KEY` | — |
+| **BrightDataTiktokModule** | `modules/brightdata.py` | SOCIAL | `BRIGHTDATA_API_KEY` | ✅ |
 
 ### 2. ScraperRunner Orchestrator
 
@@ -39,51 +38,63 @@ Scraping module fully implemented following `contracts/interfaces.py` protocol. 
 
 - Parallel execution via `asyncio.gather`
 - Deduplication by place_id (Places) or content hash
-- Circuit-breaker: 60s timeout per module
+- Circuit-breaker: 180s timeout per module (increased for BrightData async)
 - Health reporting for degradation notes
 - `create_runner(use_mocks=True/False)` factory
 
-### 3. Contract Compliance
+### 3. Bug Fixes
 
-All modules implement `contracts.interfaces.ScraperModule`:
-```python
-class ScraperModule(Protocol):
-    name: str
-    async def fetch(self, scope: ScopeConfig) -> list[RawDataItem]: ...
-    def is_healthy(self) -> bool: ...
-```
+| Bug | Fix | File |
+|-----|-----|------|
+| BPS `_make_item` crashes on None value | Defensive check: None/non-numeric → "N/A" | `modules/bps.py:263-267` |
+| `WebSearchModule.__init__` NameError | `tavily_key` → `tavily_api_key`, `brave_key` → `brave_api_key` | `modules/web_search.py:48-49` |
+| Runner timeout too short for BrightData | Increased per-module timeout from 60s to 180s | `runner.py:132` |
 
-Circuit-breaker pattern: return `[]` on failure, never raise.
+### 4. Demo Script
 
-### 4. Package Init
-
-**File:** `contracts/__init__.py` (new)
-- Re-exports from `contracts.py` and `interfaces.py`
-- Fixes import chain for `from contracts import ...`
+**File:** `scraping/demo_kue_pancong.py`
+- E2E demo: scraper (mocks) → router → print results
+- Tests full pipeline with "Kue Pancong Tapos Depok" scope
 
 ---
 
-## Test Results
+## Real API Test Results
 
-### Unit Test (`test_scrapers.py`)
-
-```
-[OK] google_places_mock        :  4 items
-[OK] tavily_web_search_mock    :  3 items
-[OK] google_trends_mock        :  2 items
-[OK] bps_statistics_mock       :  2 items
-[OK] databoks_mock             :  2 items
-Total items collected: 13
-```
-
-### Integration Test (`test_runner.py`)
+### Kue Pancong di Kecamatan Tapos, Kota Depok
 
 ```
-TEST: ScraperRunner with mock modules - PASSED
-TEST: Health report - PASSED
-TEST: Deduplication - PASSED
-ALL TESTS PASSED
+SCRAPER: 30 items (30 raw)
+
+Module stats:
+  [OK] tavily_web_search: 10 items
+  [OK] google_trends: 5 items
+  [OK] brightdata_tiktok: 15 items
+  [FAIL] google_places: 0 items (no key)
+  [FAIL] bps_statistics: 0 items (no key)
+  [FAIL] databoks: 0 items (no key)
+
+Source counts:
+  social: 15 (TikTok)
+  article: 10 (web)
+  trends: 5 (Google Trends)
 ```
+
+### TikTok Competitor Discovery (Real Data)
+
+| Competitor | Location | Evidence |
+|------------|----------|----------|
+| WarPan (@warungpancong.id) | Pancoran Mas, Depok | TikTok viral, topping banyak |
+| Pacong Balap | GDC Depok | TikTok review |
+| Pancong Lumer Amoca | Depok | 2,447 likes TikTok |
+| Warung Pancong Mang Kumis | Jl. Komodo Raya, Beji | Eksis sejak 1980-an |
+
+**Gap identified:** Belum ada kompetitor kue pancong di Kecamatan Tapos.
+
+### Google Trends
+
+- "Kue pancong": tren **naik +13.8%**
+- "cafe": tren naik +11.4%
+- "kopi": tren turun -8.1%
 
 ---
 
@@ -91,151 +102,47 @@ ALL TESTS PASSED
 
 | File | Type | Purpose |
 |------|------|---------|
-| `scraping/__init__.py` | Modified | Package exports + create_runner |
-| `scraping/runner.py` | New | ScraperRunner orchestrator |
-| `scraping/modules/__init__.py` | New | Module exports |
-| `scraping/modules/places.py` | New | Google Places API |
-| `scraping/modules/web_search.py` | New | Tavily/Brave search |
-| `scraping/modules/trends.py` | New | Google Trends |
-| `scraping/modules/bps.py` | New | BPS Statistics |
-| `scraping/modules/databoks.py` | New | Databoks API |
-| `scraping/test_scrapers.py` | New | Unit tests |
-| `scraping/test_runner.py` | New | Integration tests |
-| `scraping/README.md` | New | Documentation |
-| `contracts/__init__.py` | New | Package init |
-| `pyproject.toml` | Modified | Added tenacity dependency |
+| `scraping/modules/brightdata.py` | **New** | BrightData TikTok Scraper |
+| `scraping/modules/web_search.py` | Fixed | NameError in __init__ |
+| `scraping/modules/bps.py` | Fixed | Defensive value formatting |
+| `scraping/modules/__init__.py` | Modified | Added BrightDataTiktokModule export |
+| `scraping/runner.py` | Modified | Added BrightData wiring + timeout increase |
+| `scraping/demo_kue_pancong.py` | **New** | E2E demo script |
+| `scraping/README.md` | Modified | Updated with 6 modules + real test results |
+| `PROGRESS.md` | Modified | Updated with v1 status |
 
 ---
 
-## Bugs Fixed
-
-| Bug | Fix | File |
-|-----|-----|------|
-| BPS `_get_sektor_code` accessing `loc.category` | Changed signature to accept `IndustryCategory` directly | `modules/bps.py:231` |
-| `contracts/__init__.py` missing | Added re-exports for proper package imports | `contracts/__init__.py` |
-
----
-
-## Dependencies Added
+## Dependencies
 
 - `tenacity>=9.1.4` (retry/circuit-breaker for API calls)
+- `httpx` (async HTTP client, already in pyproject.toml)
 
 ---
 
-## Usage
+## Environment Variables
 
-```python
-from scraping import create_runner
-
-# Mock mode (no API keys)
-runner = create_runner(use_mocks=True)
-result = await runner.run(scope)
-
-# Real mode (needs API keys in env)
-runner = create_runner(use_mocks=False)
-result = await runner.run(scope)
-
-# Result contains:
-# - result.items: list[RawDataItem]
-# - result.degradation_notes: list[str]
-# - result.module_stats: dict[str, ModuleStats]
+```bash
+export GOOGLE_PLACES_API_KEY="..."
+export TAVILY_API_KEY="..."
+export BRAVE_SEARCH_API_KEY="..."
+export SERPAPI_API_KEY="..."
+export BPS_API_KEY="..."
+export DATABOKS_API_KEY="..."
+export BRIGHTDATA_API_KEY="..."
 ```
-
----
-
-## AMD Hackathon Context
-
-### Track & Judging Criteria
-
-| Criteria | Bobot | Scraping Contribution |
-|----------|-------|----------------------|
-| Creativity & Originality | Tinggi | Multi-source scraping (5 sources) + geo-based analysis |
-| Product/Market Potential | Tinggi | Target UMKM Indonesia, pricing $0-$30/bulan |
-| Completeness | Tinggi | Full pipeline: scraping -> analysis -> report |
-| Use of AMD Platforms | Wajib | 3 models simultaneous di MI300X, GPU dashboard |
-
-### AMD Infrastructure
-
-- **GPU:** MI300X (192GB HBM3)
-- **Models:** Qwen3-32B + Qwen3-8B + Qwen3-1.5B
-- **Serving:** vLLM on ROCm
-- **Budget:** $50 (dari $100 AMD credits)
-
-### Data Flow (Scraping Role)
-
-```
-User Input (Topik + Lokasi)
-    |
-    v
-[ScraperRunner] <-- Faiz
-    |-- PlacesModule (Google Maps)
-    |-- WebSearchModule (Tavily/Brave)
-    |-- TrendsModule (Google Trends)
-    |-- BpsModule (BPS Statistics)
-    |-- DataboksModule (Databoks)
-    +-- Output: RawDataItem[]
-    |
-    v
-[DataRouter] <-- Izerhaf
-    |-- Routing + Dedup
-    +-- Output: RoutedDataItem[]
-    |
-    v
-[Sentiment Agent + SWOT Agent] <-- Izerhaf
-    |
-    v
-[Summary Agent] <-- Razan
-    |
-    v
-Report + Heatmap <-- Indra
-```
-
-### Submission Checklist
-
-- [x] GitHub repository (public)
-- [ ] Docker container (docker-compose up)
-- [ ] README.md (setup guide)
-- [ ] Demo application URL (Streamlit)
-- [ ] Video presentation (2 menit)
-- [ ] Slide presentation
-- [ ] Cover image
-
-### Competitive Advantage
-
-| Fitur | Competely | ToolsKit | **BOA SaaS** |
-|-------|-----------|----------|--------------|
-| Real-time scraping | X | web search only | **5 sources** |
-| Geo-based analysis | X | X | **V** |
-| Multi-agent | X | X | **4 agents** |
-| Confidence scoring | X | X | **0-100%** |
-| Bahasa Indonesia | X | V | **V** |
 
 ---
 
 ## Next Steps
 
-1. **Push to fork** and create PR
-2. **Get API keys** for production (Google Places, Tavily, SerpApi, BPS, Databoks)
-3. **Test with real APIs** (replace mocks)
+1. **Google Places** — untuk kompetitor physical locations di Tapos
+2. **BPS** — statistik pengeluaran makanan Depok
+3. **SocialAPIs Facebook** — social listening via Facebook posts
 4. **Integrate with orchestrator** (Razan)
-5. **Dump sample data** to `fixtures/` for ML team
-6. **Docker setup** for submission
-7. **Demo preparation** (2-minute video)
+5. **Docker setup** untuk submission
 
 ---
 
-## API Key Sources
-
-| Service | Source | Free Tier |
-|---------|--------|-----------|
-| Google Places | Google Cloud Console | $200/month credit |
-| Tavily | tavily.com | 1000 searches/month |
-| Brave Search | brave.com/search/api | 2000 queries/month |
-| SerpApi | serpapi.com | 100 searches/month |
-| BPS | webapi.bps.go.id | Free with registration |
-| Databoks | databoks.katadata.co.id | Contact for API |
-
----
-
-*Document created: 2026-07-09*  
+*Document updated: 2026-07-10*  
 *Project: BOA SaaS - AMD Developer Hackathon ACT II Track Unicorn*
