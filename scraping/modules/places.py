@@ -147,7 +147,7 @@ class PlacesModule:
                 continue
 
             # Build competitor listing item
-            items.append(
+            results.append(
                 RawDataItem(
                     scope_id=scope.scope_id,
                     source_type=SourceType.PLACES_LISTING,

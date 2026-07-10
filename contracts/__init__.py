@@ -4,4 +4,5 @@ This makes `from contracts import X` work for both contracts.py and interfaces.p
 """
 
 from contracts.contracts import *  # noqa: F401,F403
+from contracts.contracts import _now  # noqa: F401 -- not in __all__, but ml/* imports it by name
 from contracts.interfaces import *  # noqa: F401,F403

@@ -137,21 +137,3 @@ REAL_MODULES = [
     InstagramModule,
     XModule,
 ]
-
-# Convenience: all mock modules for quick testing
-MOCK_MODULES = [
-    MockPlacesModule(),
-    MockWebSearchModule(),
-    MockTrendsModule(),
-    MockBpsModule(),
-    MockDataboksModule(),
-]
-
-# Real modules (need API keys)
-REAL_MODULES = [
-    PlacesModule,
-    WebSearchModule,
-    TrendsModule,
-    BpsModule,
-    DataboksModule,
-]
