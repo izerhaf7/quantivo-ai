@@ -445,13 +445,13 @@ function InputField({
   value: string; onChange: (v: string) => void; right?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[1.35rem] bg-foreground/5 p-1 ring-1 ring-foreground/10 transition-[background,box-shadow] duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] focus-within:bg-primary/10 focus-within:ring-primary/25">
-      <div className="flex items-center gap-3 rounded-[calc(1.35rem-0.25rem)] bg-card px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]">
-        {Icon && <Icon size={17} strokeWidth={1.8} className="text-muted-foreground shrink-0" />}
+    <div className="rounded-[1.35rem] bg-white/[0.055] p-1 ring-1 ring-white/10 transition-[background,box-shadow] duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] focus-within:bg-blue-500/12 focus-within:ring-blue-400/35">
+      <div className="flex items-center gap-3 rounded-[calc(1.35rem-0.25rem)] bg-black/22 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+        {Icon && <Icon size={17} strokeWidth={1.8} className="text-white/46 shrink-0" />}
         <input
           type={type} placeholder={placeholder} value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="min-h-5 flex-1 bg-transparent text-foreground text-sm font-['Plus_Jakarta_Sans'] outline-none placeholder:text-muted-foreground"
+          className="min-h-5 flex-1 bg-transparent text-white text-sm font-['Plus_Jakarta_Sans'] outline-none placeholder:text-white/34"
         />
         {right}
       </div>
@@ -512,26 +512,29 @@ function AuthSplit({ children, title, subtitle, language, onLanguageChange, them
   language: Language; onLanguageChange: (l: Language) => void;
   theme: ThemeMode; onThemeChange: (t: ThemeMode) => void;
 }) {
-  const copy = UI_COPY[language];
-  const ThemeIcon = theme === "dark" ? Moon : Sun;
-
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-background bg-[radial-gradient(circle_at_50%_-10%,rgba(42,116,196,0.10),transparent_34%),linear-gradient(180deg,rgba(255,254,250,0.72),rgba(246,244,239,0))]">
-      <header className="border-b border-border bg-card/60 px-6 py-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-40">
-        <ImageWithFallback src={ConsultinLogo} alt="Consultin" className="h-7 w-auto object-contain" />
+    <div className="relative min-h-[100dvh] overflow-hidden bg-[#030712] text-white">
+      <div className="pointer-events-none absolute inset-x-[-22%] top-[-36rem] h-[62rem] rounded-full border-[9rem] border-[#3131f5]/45 blur-[96px]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] bg-[linear-gradient(to_right,rgba(255,255,255,0.12)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:72px_82px] opacity-70 [mask-image:radial-gradient(52%_52%,white,transparent)]" />
+      <div className="pointer-events-none absolute left-[12%] top-28 h-[28rem] w-[76%] rounded-full bg-[#206ce8] opacity-24 blur-[128px] mix-blend-screen" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.10),transparent_32%),linear-gradient(to_bottom,transparent,rgba(0,0,0,0.72))]" />
+
+      <header className="relative z-10 flex items-center justify-center px-6 py-5 sm:justify-start sm:px-8">
+        <ImageWithFallback src={ConsultinLogo} alt="Consultin" className="h-8 w-auto object-contain brightness-0 invert opacity-95" />
       </header>
 
-      <div className="flex-1 flex items-center justify-center p-6 md:p-12 relative">
-          <div className="w-full max-w-[420px] relative z-10">
-            {title && (
-              <div className="mb-8">
-                <h1 className="text-2xl font-bold font-['Plus_Jakarta_Sans'] text-foreground mb-1.5 leading-snug">{title}</h1>
-                {subtitle && <p className="text-muted-foreground text-sm font-['Plus_Jakarta_Sans']">{subtitle}</p>}
-              </div>
-            )}
-            {children}
-          </div>
-        </div>
+      <main className="relative z-10 flex min-h-[calc(100dvh-5rem)] items-center justify-center px-5 pb-10 pt-3 sm:px-8">
+        <section className="w-full max-w-[430px] overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.055] p-5 shadow-[0_32px_120px_rgba(0,0,0,0.42)] backdrop-blur-xl sm:p-7">
+          {title && (
+            <div className="mb-7">
+              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6EA8D8] font-['Plus_Jakarta_Sans']">Consultin Access</p>
+              <h1 className="text-2xl font-semibold leading-tight tracking-[-0.03em] text-white font-['Plus_Jakarta_Sans']">{title}</h1>
+              {subtitle && <p className="mt-2 text-sm leading-relaxed text-white/52 font-['Plus_Jakarta_Sans']">{subtitle}</p>}
+            </div>
+          )}
+          {children}
+        </section>
+      </main>
     </div>
   );
 }
