@@ -104,15 +104,32 @@ PYTHONPATH="contracts;ml" uv run python ml/router_demo.py
 | `MockEmbeddingClient()` | `TEIEmbeddingClient()` (server self-host BGE-M3, set `EMBEDDING_BASE_URL`) atau `LocalBGEM3EmbeddingClient()` (dev lokal via `FlagEmbedding`) |
 | `HeuristicRerankAgent()` | BGE-reranker-v2-m3 di dalam `rerank()` (cross-encoder) |
 
-**Catatan `QdrantRetriever`**: endpoint & bentuk response `TEIEmbeddingClient`
-adalah kerangka (placeholder) — sesuaikan dgn kontrak server embedding yang
-benar-benar dideploy tim di AMD Dev Cloud/ROCm (Infinity atau
-text-embeddings-inference). Bagian yang sudah **diverifikasi jalan nyata**:
-`QdrantRetriever` ingest/retrieve, RRF fusion dense+sparse, filter payload
-`track`, dan round-trip `Chunk` — semua lewat `retriever_demo.py` dgn Qdrant
-`:memory:`. Yang BELUM diverifikasi (butuh infra nyata): koneksi ke server
-Qdrant sungguhan, dan embedding BGE-M3 sungguhan (dense/sparse asli, bukan
-hash pseudo-random `MockEmbeddingClient`).
+**Catatan `TEIEmbeddingClient`**: kontrak `/embed`-nya sudah **diverifikasi
+jalan nyata** terhadap model BGE-M3 sungguhan di GPU AMD asli (gfx1100/RDNA3,
+ROCm 7.2, via instance notebook AMD Developer Hackathon tim-975), di
+belakang server FastAPI custom (buatan sendiri, meniru kontrak `/embed`
+persis, pakai `FlagEmbedding.BGEM3FlagModel`) + tunnel sementara Cloudflare
+Quick Tunnel. Hasil: `dense_dim=1024`, sparse vector ada, dan cosine
+similarity masuk akal — kalimat "kedai kopi di Bandung" vs "kopinya enak"
+= 0.66, vs statistik makro tangensial (pengeluaran pangan Kabupaten Bekasi)
+= 0.42, vs kalimat saham yang tak nyambung = 0.29 — memperbaiki tepat
+kelemahan yang tercatat di atas untuk `MockEmbeddingClient` (item macro-stat
+yang sebelumnya susah dinilai relevansinya oleh mock). **Tapi**: tunnel itu
+dev/demo-only & sementara (mati kalau sesi notebook berhenti atau kuota jam
+GPU tim habis) — bukan endpoint produksi permanen, dan server FastAPI custom
+itu bukan server produksi final tim (masih stand-in) — kalau tim nanti
+deploy TEI/Infinity sungguhan, kontraknya perlu dicek ulang sendiri karena
+implementasinya beda, meski bentuk request/response `EmbeddingClient` sudah
+terbukti cocok.
+
+**Catatan `QdrantRetriever`**: bagian yang sudah **diverifikasi jalan
+nyata**: `QdrantRetriever` ingest/retrieve, RRF fusion dense+sparse, filter
+payload `track`, dan round-trip `Chunk` — semua lewat `retriever_demo.py`
+dgn Qdrant `:memory:`. Yang BELUM diverifikasi (butuh infra nyata): koneksi
+ke server Qdrant sungguhan di jaringan (masih cuma `:memory:`). Qdrant
+sengaja TIDAK dijalankan di instance GPU AMD yang sama dgn embedding server
+— Qdrant CPU/RAM-bound, tak butuh GPU, jadi menjalankannya di sana cuma
+menghabiskan kuota jam GPU tim tanpa manfaat.
 
 **Gap integrasi ditutup**: `run_demo.py` & `retriever_demo.py` sekarang
 memanggil `DataRouter` sungguhan (bukan `_TRACK` dict hardcoded) lalu
