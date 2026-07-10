@@ -1,5 +1,13 @@
 # PROGRESS.md - Scraping Module
 
+**Project:** BOA SaaS (Business Opportunity Analysis)  
+**Event:** AMD Developer Hackathon: ACT II - Track Unicorn  
+**Deadline:** 7 Juli 2026  
+**Team:** 4 orang (Indra/Frontend, Razan/Backend, Izerhaf/AI-ML, Faiz/Scraping)  
+**Prize:** $2,500 (1st) / $1,500 (2nd) / $1,000 (3rd)
+
+---
+
 **Owner:** Faiz (Scraping Lead)  
 **Last Updated:** 2026-07-09  
 **Branch:** `feature/scraping-modules`  
@@ -135,6 +143,75 @@ result = await runner.run(scope)
 
 ---
 
+## AMD Hackathon Context
+
+### Track & Judging Criteria
+
+| Criteria | Bobot | Scraping Contribution |
+|----------|-------|----------------------|
+| Creativity & Originality | Tinggi | Multi-source scraping (5 sources) + geo-based analysis |
+| Product/Market Potential | Tinggi | Target UMKM Indonesia, pricing $0-$30/bulan |
+| Completeness | Tinggi | Full pipeline: scraping -> analysis -> report |
+| Use of AMD Platforms | Wajib | 3 models simultaneous di MI300X, GPU dashboard |
+
+### AMD Infrastructure
+
+- **GPU:** MI300X (192GB HBM3)
+- **Models:** Qwen3-32B + Qwen3-8B + Qwen3-1.5B
+- **Serving:** vLLM on ROCm
+- **Budget:** $50 (dari $100 AMD credits)
+
+### Data Flow (Scraping Role)
+
+```
+User Input (Topik + Lokasi)
+    |
+    v
+[ScraperRunner] <-- Faiz
+    |-- PlacesModule (Google Maps)
+    |-- WebSearchModule (Tavily/Brave)
+    |-- TrendsModule (Google Trends)
+    |-- BpsModule (BPS Statistics)
+    |-- DataboksModule (Databoks)
+    +-- Output: RawDataItem[]
+    |
+    v
+[DataRouter] <-- Izerhaf
+    |-- Routing + Dedup
+    +-- Output: RoutedDataItem[]
+    |
+    v
+[Sentiment Agent + SWOT Agent] <-- Izerhaf
+    |
+    v
+[Summary Agent] <-- Razan
+    |
+    v
+Report + Heatmap <-- Indra
+```
+
+### Submission Checklist
+
+- [x] GitHub repository (public)
+- [ ] Docker container (docker-compose up)
+- [ ] README.md (setup guide)
+- [ ] Demo application URL (Streamlit)
+- [ ] Video presentation (2 menit)
+- [ ] Slide presentation
+- [ ] Cover image
+
+### Competitive Advantage
+
+| Fitur | Competely | ToolsKit | **BOA SaaS** |
+|-------|-----------|----------|--------------|
+| Real-time scraping | X | web search only | **5 sources** |
+| Geo-based analysis | X | X | **V** |
+| Multi-agent | X | X | **4 agents** |
+| Confidence scoring | X | X | **0-100%** |
+| Bahasa Indonesia | X | V | **V** |
+
+---
+
 ## Next Steps
 
 1. **Push to fork** and create PR
@@ -142,6 +219,8 @@ result = await runner.run(scope)
 3. **Test with real APIs** (replace mocks)
 4. **Integrate with orchestrator** (Razan)
 5. **Dump sample data** to `fixtures/` for ML team
+6. **Docker setup** for submission
+7. **Demo preparation** (2-minute video)
 
 ---
 
@@ -158,4 +237,5 @@ result = await runner.run(scope)
 
 ---
 
-*Document created: 2026-07-09*
+*Document created: 2026-07-09*  
+*Project: BOA SaaS - AMD Developer Hackathon ACT II Track Unicorn*
