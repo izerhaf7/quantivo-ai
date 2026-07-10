@@ -20,16 +20,14 @@ import ConsultinLogo from "@/imports/Consultin_Logo.svg";
 import OnboardingBriefImg from "@/app/assets/illustrations/onboarding-brief.webp";
 import OnboardingEvidenceImg from "@/app/assets/illustrations/onboarding-evidence.webp";
 import OnboardingWorkflowImg from "@/app/assets/illustrations/onboarding-workflow.webp";
-import NanoDashboardImg from "@/app/assets/illustrations/nano/consultin-dashboard.svg";
 import NanoReportImg from "@/app/assets/illustrations/nano/consultin-report.svg";
-import EmptyQuestionImg from "@/app/assets/illustrations/empty-question.webp";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Screen =
   | "splash" | "onboarding" | "login" | "signup"
   | "phonenumber" | "phoneverify" | "forgotpassword" | "reset"
   | "home" | "briefreview" | "processing" | "report" | "fullreport"
-  | "slidedeck" | "history" | "account";
+  | "slidedeck" | "history" | "subscription" | "account";
 
 type ThemeMode = "light" | "dark";
 type Language = "id" | "en";
@@ -523,14 +521,11 @@ function AuthSplit({ children, title, subtitle, language, onLanguageChange, them
       <div className="hidden lg:flex lg:w-[400px] xl:w-[460px] shrink-0 bg-[#0C1828] flex-col justify-between border-r border-white/5 relative overflow-hidden">
         {/* Bezel mesh gradient */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(42,116,196,0.15),transparent_40%)]" />
-        <div className="p-7 flex items-center gap-2.5 relative z-10">
-          <ImageWithFallback src={CLogoImg} alt="Consultin" className="w-6 h-6 object-contain" />
-          <span className="text-white/60 text-xs font-semibold font-['Plus_Jakarta_Sans'] tracking-widest uppercase">Consultin</span>
-        </div>
+        <div className="p-7 relative z-10" />
 
         <div className="flex-1 flex flex-col justify-center px-10 pb-10 relative z-10">
           <div className="mb-8">
-            <ImageWithFallback src={CLogoImg} alt="Consultin" className="w-16 h-16 object-contain mb-7 shadow-[0_12px_24px_rgba(42,116,196,0.2)]" />
+            <ImageWithFallback src={ConsultinLogo} alt="Consultin" className="h-9 w-auto object-contain mb-8 brightness-0 invert opacity-95" />
             <h2 className="text-[28px] font-bold font-['Plus_Jakarta_Sans'] text-white leading-snug mb-3">
               AI Business Intelligence<br />untuk UMKM Indonesia
             </h2>
@@ -569,8 +564,8 @@ function AuthSplit({ children, title, subtitle, language, onLanguageChange, them
       <div className="flex-1 flex flex-col min-h-dvh">
         {/* Responsive Header with Language & Theme Toggles */}
         <header className="border-b border-border bg-card/60 px-6 py-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-40">
-          <div className="flex items-center gap-2.5">
-            <ImageWithFallback src={CLogoImg} alt="Consultin" className="w-6 h-6 object-contain lg:hidden" />
+          <div className="flex items-center gap-2.5 lg:hidden">
+            <ImageWithFallback src={CLogoImg} alt="Consultin" className="w-6 h-6 object-contain" />
             <span className="font-bold text-sm font-['Plus_Jakarta_Sans'] text-foreground">Consultin</span>
           </div>
           <div className="flex items-center gap-2.5">
@@ -621,6 +616,7 @@ function AuthSplit({ children, title, subtitle, language, onLanguageChange, them
 const NAV_ITEMS = [
   { id: "home" as Screen, Icon: Home, label: "Dashboard" },
   { id: "history" as Screen, Icon: Clock, label: "History" },
+  { id: "subscription" as Screen, Icon: Crown, label: "Pro" },
   { id: "account" as Screen, Icon: User, label: "Akun" },
 ] as const;
 
@@ -675,7 +671,7 @@ function Sidebar({ active, onNavigate, analysisCount, language }: {
           <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden mb-2.5">
             <div className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all" style={{ width: `${(analysisCount / 3) * 100}%` }} />
           </div>
-          <button onClick={() => onNavigate("account")} className="w-full text-center text-[11px] font-semibold font-['Plus_Jakarta_Sans'] text-primary hover:text-white transition-colors">
+          <button onClick={() => onNavigate("subscription")} className="w-full text-center text-[11px] font-semibold font-['Plus_Jakarta_Sans'] text-primary hover:text-white transition-colors">
             {copy.upgrade} →
           </button>
         </div>
@@ -738,32 +734,9 @@ function AppShell({ children, screen, onNavigate, analysisCount, language, onLan
             <ImageWithFallback src={CLogoImg} alt="C" className="w-6 h-6 object-contain" />
             <span className="text-sm font-bold font-['Plus_Jakarta_Sans'] text-foreground">Consultin</span>
           </div>
-          <div className="flex items-center gap-2.5">
-            {/* Language Switch */}
-            <div className="flex rounded-full bg-muted p-0.5 border border-border/10 shadow-xs">
-              {(["id", "en"] as const).map((lang) => (
-                <button
-                  key={lang}
-                  onClick={() => onLanguageChange(lang)}
-                  aria-pressed={language === lang}
-                  className={cn(
-                    "rounded-full px-2 py-0.5 text-[9.5px] font-bold min-h-6 min-w-8 flex items-center justify-center transition-all cursor-pointer",
-                    language === lang ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {lang.toUpperCase()}
-                </button>
-              ))}
-            </div>
-            {/* Theme Toggle */}
-            <button
-              onClick={() => onThemeChange(theme === "dark" ? "light" : "dark")}
-              aria-label={theme === "dark" ? copy.themeDark : copy.themeLight}
-              className="flex size-8 items-center justify-center rounded-full bg-muted text-foreground transition-all hover:bg-muted/80 cursor-pointer shadow-xs"
-            >
-              <ThemeIcon size={14} />
-            </button>
-          </div>
+          <button onClick={() => onNavigate("account")} className="flex size-9 items-center justify-center rounded-full bg-muted text-foreground transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <User size={15} />
+          </button>
         </header>
 
         {/* Desktop utility bar: app-wide controls belong with account/status actions, not buried in primary navigation. */}
@@ -771,26 +744,14 @@ function AppShell({ children, screen, onNavigate, analysisCount, language, onLan
           <div className="min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground font-mono">Consultin workspace</p>
             <p className="mt-0.5 truncate text-sm font-semibold text-foreground font-['Plus_Jakarta_Sans']">
-              {screen === "briefreview" ? copy.reviewTitle : screen === "history" ? copy.history : screen === "account" ? copy.account : copy.dashboard}
+              {screen === "briefreview" ? copy.reviewTitle : screen === "history" ? copy.history : screen === "subscription" ? "Subscription" : screen === "account" ? copy.account : copy.dashboard}
             </p>
           </div>
-          <div className="flex items-center gap-2" aria-label={copy.mainControl}>
-            <div className="flex rounded-full border border-border/70 bg-card/78 p-1 shadow-[0_10px_24px_rgba(12,24,40,0.06)] ring-1 ring-white/70">
-              {(["id", "en"] as const).map((next) => (
-                <button key={next} type="button" aria-label={`${copy.language}: ${next.toUpperCase()}`} aria-pressed={language === next}
-                  onClick={() => onLanguageChange(next)}
-                  className={cn("h-8 min-w-9 rounded-full px-3 text-[11px] font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary", language === next ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground")}>
-                  {next.toUpperCase()}
-                </button>
-              ))}
-            </div>
-            <button type="button" onClick={() => onThemeChange(theme === "dark" ? "light" : "dark")}
-              aria-label={theme === "dark" ? copy.themeLight : copy.themeDark}
-              className="flex h-10 items-center gap-2 rounded-full border border-border/70 bg-card/78 px-3 text-[12px] font-semibold text-foreground shadow-[0_10px_24px_rgba(12,24,40,0.06)] ring-1 ring-white/70 transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary font-['Plus_Jakarta_Sans']">
-              <ThemeIcon size={15} />
-              <span>{theme === "dark" ? copy.themeLight : copy.themeDark}</span>
-            </button>
-          </div>
+          <button type="button" onClick={() => onNavigate("account")}
+            className="flex h-10 items-center gap-2 rounded-full border border-border/70 bg-card/78 px-3 text-[12px] font-semibold text-foreground shadow-[0_10px_24px_rgba(12,24,40,0.06)] ring-1 ring-white/70 transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary font-['Plus_Jakarta_Sans']">
+            <User size={15} />
+            <span>{copy.user}</span>
+          </button>
         </header>
 
         <main id="main-content" className="flex-1 min-w-0 overflow-auto pb-24 md:pb-0 relative z-10">
@@ -1426,28 +1387,19 @@ function HomeView({ onSubmit, onOpenReport, analysisCount, language }: { onSubmi
 
   return (
     <div className="min-h-full">
-      {/* Header */}
-      <div className="sticky top-14 z-10 bg-background/80 backdrop-blur-md border-b border-border px-6 py-3 md:top-0 md:px-8 md:py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="inline-flex rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary font-mono">Workspace</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-[12px] font-mono text-primary bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-md">
-            Free · {3 - analysisCount} {copy.remainingQuota}
-          </span>
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-5xl px-6 py-10 md:px-8">
+      <div className="mx-auto max-w-4xl px-6 py-8 md:px-8">
         {/* Greeting */}
-        <div className="mb-8 grid gap-5 lg:grid-cols-[1fr_18rem] lg:items-end">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary font-mono">Workspace</p>
             <h1 className="mb-1.5 text-2xl font-semibold text-foreground font-['Plus_Jakarta_Sans'] md:text-3xl">
               {copy.dashboardTable}
             </h1>
-            <p className="max-w-[65ch] text-muted-foreground font-['Plus_Jakarta_Sans']">{copy.dashboardDesc}</p>
+            <p className="max-w-[58ch] text-sm leading-relaxed text-muted-foreground font-['Plus_Jakarta_Sans']">{copy.dashboardDesc}</p>
           </div>
-          <IllustrationFrame src={NanoDashboardImg} alt="Ruang intelijen bisnis dengan panel analisis dan bukti pasar" className="hidden h-36 lg:block" />
+          <span className="w-fit rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[12px] font-semibold text-primary font-mono">
+            Free · {3 - analysisCount} {copy.remainingQuota}
+          </span>
         </div>
 
         {/* Query card */}
@@ -1520,21 +1472,18 @@ function HomeView({ onSubmit, onOpenReport, analysisCount, language }: { onSubmi
         </div>
 
         {/* Quick suggestions */}
-        <div className="mb-8 grid gap-4 rounded-[1.55rem] border border-border bg-card/86 p-4 shadow-[0_16px_42px_rgba(12,24,40,0.05)] sm:grid-cols-[8.5rem_1fr] sm:items-center">
-          <IllustrationFrame src={EmptyQuestionImg} alt="Ruang kosong untuk pertanyaan bisnis pertama" className="hidden h-28 shadow-none ring-0 sm:block" />
-          <div>
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <p className="text-[12px] font-semibold text-foreground font-['Plus_Jakarta_Sans']">{copy.suggestionsTitle}</p>
-              <p className="text-[11px] text-muted-foreground font-['Plus_Jakarta_Sans']">{copy.suggestionsDesc}</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {suggestions.map(s => (
-                <button key={s} onClick={() => setQuery(s)}
-                  className="min-h-11 rounded-full border border-border bg-background px-3.5 py-1.5 text-[13px] text-foreground transition-[background,border-color,transform] hover:border-primary/45 hover:bg-primary/10 active:scale-[0.98] font-['Plus_Jakarta_Sans']">
-                  {s}
-                </button>
-              ))}
-            </div>
+        <div className="mb-8">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-[12px] font-semibold text-foreground font-['Plus_Jakarta_Sans']">{copy.suggestionsTitle}</p>
+            <p className="text-[11px] text-muted-foreground font-['Plus_Jakarta_Sans']">{copy.suggestionsDesc}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {suggestions.map(s => (
+              <button key={s} onClick={() => setQuery(s)}
+                className="min-h-10 rounded-full border border-border bg-card px-3.5 py-1.5 text-[13px] text-foreground transition-[background,border-color,transform] hover:border-primary/45 hover:bg-primary/10 active:scale-[0.98] font-['Plus_Jakarta_Sans']">
+                {s}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -2720,19 +2669,22 @@ const TIERS = [
   },
 ];
 
-function AccountView({ onLogout }: { onLogout: () => void }) {
+function AccountView({ mode = "account", onLogout, language, onLanguageChange, theme, onThemeChange }: { mode?: "account" | "subscription"; onLogout: () => void; language: Language; onLanguageChange: (l: Language) => void; theme: ThemeMode; onThemeChange: (t: ThemeMode) => void }) {
   const [billing, setBilling] = useState<"monthly" | "yearly">("yearly");
+  const ThemeIcon = theme === "dark" ? Moon : Sun;
 
   return (
     <div className="min-h-full">
       <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-6 md:px-8 py-4 flex items-center justify-between">
-        <h1 className={`text-lg font-bold text-foreground ${JK}`}>Akun &amp; Langganan</h1>
+        <h1 className={`text-lg font-bold text-foreground ${JK}`}>{mode === "subscription" ? "Langganan" : "Akun & Pengaturan"}</h1>
         <button onClick={onLogout} className={`flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors ${JK}`}>
           <LogOut size={15} /> Keluar
         </button>
       </div>
 
       <div className="w-full px-6 md:px-8 py-6">
+        {mode === "account" && (
+          <>
         <div className="bg-card rounded-[1.6rem] border border-border p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5 mb-8 shadow-[0_18px_48px_-34px_rgba(32,33,29,0.28)]">
           <div className="w-14 h-14 rounded-2xl bg-primary/12 ring-1 ring-primary/20 flex items-center justify-center shrink-0">
             <User size={24} className="text-primary" />
@@ -2754,17 +2706,42 @@ function AccountView({ onLogout }: { onLogout: () => void }) {
           </div>
         </div>
 
-        <div className="bg-card rounded-xl border border-border p-5 mb-8">
-          <div className="flex items-center justify-between mb-3">
-            <p className={`text-[13px] font-semibold text-foreground ${JK}`}>Penggunaan Bulan Ini</p>
-            <span className="text-[13px] font-mono text-muted-foreground">1 / 3 analisis</span>
+        <div className="mb-8 grid gap-4 lg:grid-cols-[1fr_1fr]">
+          <div className="bg-card rounded-xl border border-border p-5">
+            <div className="flex items-center justify-between mb-3">
+              <p className={`text-[13px] font-semibold text-foreground ${JK}`}>Penggunaan Bulan Ini</p>
+              <span className="text-[13px] font-mono text-muted-foreground">1 / 3 analisis</span>
+            </div>
+            <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+              <div className="h-full bg-primary rounded-full transition-all" style={{ width: "33%" }} />
+            </div>
+            <p className={`text-[12px] text-muted-foreground mt-2 ${JK}`}>Reset pada 1 Agustus 2026</p>
           </div>
-          <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-            <div className="h-full bg-primary rounded-full transition-all" style={{ width: "33%" }} />
-          </div>
-          <p className={`text-[12px] text-muted-foreground mt-2 ${JK}`}>Reset pada 1 Agustus 2026</p>
-        </div>
 
+          <div className="bg-card rounded-xl border border-border p-5">
+            <p className={`text-[13px] font-semibold text-foreground ${JK}`}>Pengaturan Web</p>
+            <p className={`mt-1 text-[12px] text-muted-foreground ${JK}`}>Bahasa dan tampilan dipindahkan ke area akun agar workspace tetap bersih.</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <div className="flex rounded-full bg-muted p-1 border border-border/70">
+                {(["id", "en"] as const).map((next) => (
+                  <button key={next} type="button" aria-pressed={language === next} onClick={() => onLanguageChange(next)}
+                    className={cn("h-9 min-w-11 rounded-full px-3 text-[11px] font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary", language === next ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
+                    {next.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              <button type="button" onClick={() => onThemeChange(theme === "dark" ? "light" : "dark")}
+                className="flex h-11 items-center gap-2 rounded-full border border-border bg-background px-4 text-[12px] font-semibold text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                <ThemeIcon size={15} />
+                {theme === "dark" ? "Mode terang" : "Mode gelap"}
+              </button>
+            </div>
+          </div>
+        </div>
+          </>
+        )}
+
+        {mode === "subscription" && (
         <section className="relative overflow-hidden rounded-[2rem] bg-[#071321] p-5 text-white shadow-[0_28px_80px_-42px_rgba(20,56,94,0.85)] ring-1 ring-white/10 sm:p-6 md:p-8">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_10%,rgba(42,116,196,0.32),transparent_40%),radial-gradient(circle_at_78%_28%,rgba(110,168,216,0.16),transparent_36%)]" />
           <div className="relative mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -2842,6 +2819,7 @@ function AccountView({ onLogout }: { onLogout: () => void }) {
             <p className={`text-[12px] text-white/40 ${JK}`}>Transaksi diproses aman via payment gateway lokal.</p>
           </div>
         </section>
+        )}
       </div>
     </div>
   );
@@ -2940,7 +2918,8 @@ export default function App() {
       {screen === "report" && <ReportView query={query} onBack={() => navigate("home")} onNavigate={navigate} language={language} />}
       {screen === "fullreport" && <FullReportView query={query || REPORT_DATA.topic} onBack={() => navigate("report")} onSlideDeck={() => navigate("slidedeck")} language={language} />}
       {screen === "history" && <HistoryView onNavigate={navigate} onOpenReport={openReport} language={language} />}
-      {screen === "account" && <AccountView onLogout={() => { frontendAdapter.signOut(); navigate("login"); }} language={language} />}
+      {screen === "subscription" && <AccountView mode="subscription" onLogout={() => { frontendAdapter.signOut(); navigate("login"); }} language={language} onLanguageChange={setLanguage} theme={theme} onThemeChange={setTheme} />}
+      {screen === "account" && <AccountView mode="account" onLogout={() => { frontendAdapter.signOut(); navigate("login"); }} language={language} onLanguageChange={setLanguage} theme={theme} onThemeChange={setTheme} />}
     </AppShell>
   );
 }
