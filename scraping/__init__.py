@@ -37,15 +37,30 @@ All modules:
 
 from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 def _load_dotenv() -> None:
     """Load .env file from repo root into os.environ (no python-dotenv needed).
 
     Skips keys that are already set in the environment (env vars take precedence).
+    There is exactly ONE .env for the whole project, at the repo root -- shared
+    with ml/ (see ml/llm_demo.py). A .env placed anywhere else, e.g. scraping/.env,
+    is never read by this loader; warn loudly so a locally-set key doesn't
+    silently go unused.
     """
+    stray_env = Path(__file__).resolve().parent / ".env"
+    if stray_env.is_file():
+        logger.warning(
+            "%s exists but is IGNORED -- only the repo-root .env is loaded. "
+            "Move its contents to the root .env instead.",
+            stray_env,
+        )
+
     env_path = Path(__file__).resolve().parent.parent / ".env"
     if not env_path.is_file():
         return
