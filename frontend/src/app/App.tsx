@@ -643,9 +643,9 @@ function AppShell({ children, screen, onNavigate, analysisCount, language, onLan
       <Sidebar active={screen} onNavigate={onNavigate} analysisCount={analysisCount} language={language} />
       <div className="flex-1 flex flex-col min-w-0">
         {/* Mobile Top Header */}
-        <header className="md:hidden sticky top-0 z-40 flex h-14 items-center border-b border-white/[0.06] bg-[#030712]/72 px-4 backdrop-blur-xl">
-          <button onClick={() => onNavigate("home")} className="flex items-center rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300" aria-label="Kembali ke dashboard">
-            <ImageWithFallback src={ConsultinLogo} alt="Consultin" className="h-7 w-auto object-contain brightness-0 invert drop-shadow-[0_1px_10px_rgba(255,255,255,0.16)]" />
+        <header className="pointer-events-none fixed inset-x-0 top-0 z-40 flex h-14 items-center px-4 md:hidden">
+          <button onClick={() => onNavigate("home")} className="pointer-events-auto flex items-center rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300" aria-label="Kembali ke dashboard">
+            <ImageWithFallback src={ConsultinLogo} alt="Consultin" className="h-7 w-auto object-contain brightness-0 invert drop-shadow-[0_2px_14px_rgba(0,0,0,0.55)]" />
           </button>
         </header>
 
