@@ -2578,7 +2578,7 @@ function AccountView({ mode = "account", onLogout, language, onLanguageChange, t
     <div className={cn("min-h-full", (mode === "subscription" || mode === "account") && "bg-[#03040a]")}>
       <div className={cn("w-full", mode === "subscription" || mode === "account" ? "p-0" : "px-6 md:px-8 py-6")}>
         {mode === "account" && (
-          <section className="relative min-h-full overflow-hidden bg-[#030712] px-6 py-7 text-white md:px-8">
+          <section className="relative min-h-[calc(100dvh-3.5rem)] overflow-hidden bg-[#030712] px-6 py-7 pb-28 text-white md:px-8 md:pb-10">
             <div className="pointer-events-none absolute inset-x-[-22%] top-[-32rem] h-[56rem] rounded-full border-[8rem] border-[#3131f5]/40 blur-[96px]" />
             <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-[linear-gradient(to_right,rgba(255,255,255,0.11)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:70px_80px] [mask-image:radial-gradient(50%_50%,white,transparent)]" />
             <div className="relative mx-auto max-w-5xl">
@@ -2616,8 +2616,8 @@ function AccountView({ mode = "account", onLogout, language, onLanguageChange, t
                 </div>
               </div>
 
-              <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-                <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.055] p-5">
+              <div className="grid gap-4 lg:grid-cols-12">
+                <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.055] p-5 lg:col-span-5">
                   <div className="mb-3 flex items-center justify-between">
                     <p className={`text-[13px] font-semibold text-white ${JK}`}>Penggunaan Bulan Ini</p>
                     <span className="font-mono text-[13px] text-white/50">1 / 3 analisis</span>
@@ -2625,10 +2625,20 @@ function AccountView({ mode = "account", onLogout, language, onLanguageChange, t
                   <div className="h-2.5 overflow-hidden rounded-full bg-white/10">
                     <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-300" style={{ width: "33%" }} />
                   </div>
-                  <p className={`mt-2 text-[12px] text-white/45 ${JK}`}>Reset pada 1 Agustus 2026</p>
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <div className="rounded-2xl border border-white/10 bg-black/18 p-3">
+                      <p className={`text-[11px] text-white/42 ${JK}`}>Sisa kuota</p>
+                      <p className="mt-1 font-mono text-lg font-semibold text-white">2</p>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-black/18 p-3">
+                      <p className={`text-[11px] text-white/42 ${JK}`}>Reset berikutnya</p>
+                      <p className="mt-1 font-mono text-sm font-semibold text-white">1 Agu</p>
+                    </div>
+                  </div>
+                  <p className={`mt-3 text-[12px] text-white/45 ${JK}`}>Upgrade saat butuh laporan lengkap dan export deck.</p>
                 </div>
 
-                <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.055] p-5">
+                <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.055] p-5 lg:col-span-7">
                   <p className={`text-[13px] font-semibold text-white ${JK}`}>Bahasa Workspace</p>
                   <p className={`mt-1 text-[12px] text-white/45 ${JK}`}>Tema utama dikunci dulu agar tampilan stabil. Light theme direncanakan setelah semua halaman konsisten.</p>
                   <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -2647,6 +2657,20 @@ function AccountView({ mode = "account", onLogout, language, onLanguageChange, t
                     <p className={`text-[12px] leading-relaxed text-amber-100/80 ${JK}`}>Multi bahasa penuh (中文, 日本語, 한국어, العربية, dll.) butuh i18n dictionary/API agar seluruh copy, laporan, dan export ikut berubah. Selector siap diperluas setelah dictionary masuk.</p>
                   </div>
                 </div>
+              </div>
+
+              <div className="mt-4 grid gap-4 lg:grid-cols-3">
+                {[
+                  ["Paket saat ini", "Cek Arah", "Gratis · cocok untuk validasi awal"],
+                  ["Output terakhir", "1 laporan", "Kafe Dago Bandung · skor 82/100"],
+                  ["Keamanan", "Data tersimpan", "Preferensi dan riwayat tetap lokal di prototype"],
+                ].map(([label, value, desc]) => (
+                  <div key={label} className="rounded-[1.35rem] border border-white/10 bg-white/[0.045] p-4">
+                    <p className={`text-[11px] font-semibold uppercase tracking-[0.14em] text-white/36 ${JK}`}>{label}</p>
+                    <p className={`mt-2 text-base font-semibold text-white ${JK}`}>{value}</p>
+                    <p className={`mt-1 text-[12px] leading-relaxed text-white/45 ${JK}`}>{desc}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </section>
