@@ -1,25 +1,33 @@
-=== File: .omo/evidence/task-1-scraping-fix-e2e-happy.txt ===
-
 == Step 1: py_compile ==
 COMMAND: uv run python -m py_compile scraping/modules/bps.py
 OUTPUT:
 
 EXIT_CODE: 0
 
-== Step 2: failing reproduction command ==
-COMMAND: set "PYTHONPATH=contracts;scraping;ml" && uv run python -c "from scraping.modules.bps import BpsModule; from contracts import ScopeConfig, BusinessInput, Location, IndustryCategory, BusinessStage; scope=ScopeConfig(business_input=BusinessInput(business_type='x', description='y', location=Location(city='Depok', province='Jawa Barat'), category=IndustryCategory.FOOD_BEVERAGE, radius_km=3.0, business_stage=BusinessStage.NEW), interpreted_summary='x', search_keywords=['x'], competitor_query='x', expires_at=__import__('datetime').datetime.now(__import__('datetime').timezone.utc)); print(BpsModule()._make_item(scope, 'test', {'data': {}}, scope.business_input.location).raw_text)"
+== Step 2: failing reproduction ==
+COMMAND: set "PYTHONPATH=contracts;scraping;ml" && uv run python -c "from scraping.modules.bps import BpsModule; from contracts import ScopeConfig, BusinessInput, Location, IndustryCategory, BusinessStage; scope=ScopeConfig(business_input=BusinessInput(business_type='x', description='y', location=Location(city='Depok', province='Jawa Barat'), category=IndustryCategory.FOOD_BEVERAGE, radius_km=3.0, business_stage=BusinessStage.NEW), interpreted_summary='x', search_keywords=['x'], competitor_query='x', expires_at=__import__('datetime').datetime.now(__import__('datetime').timezone.utc)); b=BpsModule(); print('None:', b._make_item(scope, 'test', {'data': {}}, scope.business_input.location).raw_text); print('num:', b._make_item(scope, 'test', {'data': {'value': 12345.6}}, scope.business_input.location).raw_text); print('str:' , b._make_item(scope, 'test', {'data': {'value': '7890.5'}}, scope.business_input.location).raw_text); print('bad:', b._make_item(scope, 'test', {'data': {'value': 'abc'}}, scope.business_input.location).raw_text)"
 OUTPUT:
-Data BPS: Test di Jawa Barat (2023): N/A .
+None: Data BPS: Test di Jawa Barat (2023): N/A .
+num: Data BPS: Test di Jawa Barat (2023): 12,346 .
+str: Data BPS: Test di Jawa Barat (2023): 7,890 .
+bad: Data BPS: Test di Jawa Barat (2023): N/A .
 
 EXIT_CODE: 0
 
-== Step 3: test_runner.py ==
-COMMAND: set "PYTHONPATH=contracts;scraping" && uv run python scraping/test_runner.py
+== Step 3: extended value cases ==
+OUTPUT:
+None: Data BPS: Test di Jawa Barat (2023): N/A .
+num: Data BPS: Test di Jawa Barat (2023): 12,346 .
+str: Data BPS: Test di Jawa Barat (2023): 7,890 .
+bad: Data BPS: Test di Jawa Barat (2023): N/A .
+
+== Step 4: test_runner ==
+COMMAND: set PYTHONPATH=contracts;scraping && uv run python scraping/test_runner.py
 OUTPUT:
 ============================================================
 TEST: ScraperRunner with mock modules
 ============================================================
-Scope: 142ec128-7f89-4317-b987-e2c21e358435
+Scope: 1d96166b-b0cc-4900-9c08-88c75712be26
 Modules: ['google_places_mock', 'tavily_web_search_mock', 'google_trends_mock', 'bps_statistics_mock', 'databoks_mock']
 
 Total raw items: 13
