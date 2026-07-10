@@ -447,7 +447,7 @@ function InputField({
   return (
     <div className="rounded-[1.35rem] bg-foreground/5 p-1 ring-1 ring-foreground/10 transition-[background,box-shadow] duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] focus-within:bg-primary/10 focus-within:ring-primary/25">
       <div className="flex items-center gap-3 rounded-[calc(1.35rem-0.25rem)] bg-card px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]">
-        {Icon && <Icon size={17} strokeWidth={1.8} className="text-muted-foreground shrink-0" />}
+        {Icon && <Icon size={17} strokeWidth={1.8} className="text-white/45 shrink-0" />}
         <input
           type={type} placeholder={placeholder} value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -1082,7 +1082,7 @@ function PhoneNumberView({ onVerify, onLater, language, theme, onThemeChange, on
               <div className="bg-red-600 flex-1" />
               <div className="bg-white flex-1" />
             </div>
-            <span className="text-sm font-['Plus_Jakarta_Sans'] text-foreground font-medium">+62</span>
+            <span className="text-sm font-['Plus_Jakarta_Sans'] text-white font-medium">+62</span>
             <ChevronDown size={14} className="text-muted-foreground" />
           </div>
           <InputField icon={Phone} placeholder={copy.phonePlaceholder} value={phone} onChange={setPhone} />
@@ -1149,7 +1149,7 @@ function PhoneVerifyView({ onVerify, onBack, language, theme, onThemeChange, onL
         <div className="text-center">
           {timer > 0 ? (
             <p className="text-[13px] text-muted-foreground font-['Plus_Jakarta_Sans']">
-              {copy.resendIn} <span className="font-mono text-foreground font-medium">0:{timer.toString().padStart(2,"0")}</span>
+              {copy.resendIn} <span className="font-mono text-white font-medium">0:{timer.toString().padStart(2,"0")}</span>
             </p>
           ) : (
             <button onClick={() => setTimer(59)} className="text-[13px] text-primary font-['Plus_Jakarta_Sans'] font-semibold hover:text-primary transition-colors flex items-center gap-1.5 mx-auto cursor-pointer">
@@ -1555,7 +1555,7 @@ function ProcessingView({ query, onComplete, language }: { query: string; onComp
             <span className="text-[13px] font-['Plus_Jakarta_Sans'] text-muted-foreground">{language === "id" ? "Progress keseluruhan" : "Overall progress"}</span>
             <span className="text-[13px] font-mono font-medium text-foreground">{pct}%</span>
           </div>
-          <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+          <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
             <div className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
           </div>
         </div>
@@ -1585,7 +1585,7 @@ function ProcessingView({ query, onComplete, language }: { query: string; onComp
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <p className={cn("text-[13px] font-semibold font-['Plus_Jakarta_Sans']", done ? "text-success" : active ? "text-foreground" : "text-muted-foreground")}>{s.name}</p>
-                      <span className="text-[11px] font-mono text-muted-foreground shrink-0">{s.time}</span>
+                      <span className="text-[11px] font-mono text-white/45 shrink-0">{s.time}</span>
                     </div>
                     {(done || active) && <p className="text-[12px] text-muted-foreground font-['Plus_Jakarta_Sans'] mt-0.5 leading-relaxed">{s.desc}</p>}
                   </div>
@@ -1842,7 +1842,7 @@ function ReportView({ query, onBack, onNavigate }: {
                       <p className="text-[11px] font-['Plus_Jakarta_Sans'] text-foreground leading-tight truncate max-w-[160px]">{c.text}</p>
                       <span className="text-[11px] font-mono font-medium text-foreground shrink-0 ml-2">{c.conf}%</span>
                     </div>
-              <div className="h-1 bg-muted rounded-full overflow-hidden">
+              <div className="h-1 bg-white/10 rounded-full overflow-hidden">
                        <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${c.conf}%` }} />
                     </div>
                   </div>
@@ -1998,7 +1998,7 @@ function FullReportView({ query, onBack, onSlideDeck }: { query: string; onBack:
                         <thead>
                           <tr className="border-b border-border">
                             {["Kompetitor", "Skor", "Market Share", "YoY Growth"].map(h => (
-                              <th key={h} className="text-left py-2 px-3 text-[11px] font-bold text-muted-foreground uppercase tracking-wide">{h}</th>
+                              <th key={h} className="text-left py-2 px-3 text-[11px] font-bold text-white/42 uppercase tracking-wide">{h}</th>
                             ))}
                           </tr>
                         </thead>
@@ -2008,7 +2008,7 @@ function FullReportView({ query, onBack, onSlideDeck }: { query: string; onBack:
                               <td className="py-2.5 px-3 font-medium text-foreground">{c.name}</td>
                               <td className="py-2.5 px-3">
                                 <div className="flex items-center gap-2">
-                                  <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+                                  <div className="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
                                     <div className="h-full bg-primary rounded-full" style={{ width: `${c.score}%` }} />
                                   </div>
                                   <span className="font-mono text-foreground">{c.score}</span>
@@ -2062,7 +2062,7 @@ function FullReportView({ query, onBack, onSlideDeck }: { query: string; onBack:
                         <thead>
                           <tr className="border-b border-border">
                             {["Risiko", "Probabilitas", "Dampak", "Mitigasi"].map(h => (
-                              <th key={h} className="text-left py-2 px-3 text-[11px] font-bold text-muted-foreground uppercase tracking-wide">{h}</th>
+                              <th key={h} className="text-left py-2 px-3 text-[11px] font-bold text-white/42 uppercase tracking-wide">{h}</th>
                             ))}
                           </tr>
                         </thead>
@@ -2091,7 +2091,7 @@ function FullReportView({ query, onBack, onSlideDeck }: { query: string; onBack:
                             <p className="text-[13px] font-semibold font-['Plus_Jakarta_Sans'] text-foreground">{c.text}</p>
                             <span className="text-[12px] font-bold font-mono text-primary shrink-0 ml-3">{c.conf}%</span>
                           </div>
-                          <div className="h-1.5 bg-muted rounded-full overflow-hidden mb-1.5">
+                          <div className="h-1.5 bg-white/10 rounded-full overflow-hidden mb-1.5">
                             <div className="h-full bg-gradient-to-r from-primary to-accent rounded-full" style={{ width: `${c.conf}%` }} />
                           </div>
                           <p className="text-[11px] text-muted-foreground font-['Plus_Jakarta_Sans']">Sumber: {c.source}</p>
@@ -2446,49 +2446,51 @@ function HistoryView({ onNavigate, onOpenReport }: { onNavigate: (s: Screen) => 
   const filtered = HISTORY_DATA.filter(h => h.topic.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="min-h-full">
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-6 md:px-8 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-bold font-['Plus_Jakarta_Sans'] text-foreground">History Analisis</h1>
-          <p className="text-[12px] text-muted-foreground font-['Plus_Jakarta_Sans']">{HISTORY_DATA.length} analisis tersimpan</p>
+    <div className="relative min-h-full overflow-hidden bg-[#030712] text-white">
+      <div className="pointer-events-none absolute inset-x-[-20%] top-[-30rem] h-[54rem] rounded-full border-[8rem] border-[#3131f5]/45 blur-[92px]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-[linear-gradient(to_right,rgba(255,255,255,0.12)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:70px_80px] [mask-image:radial-gradient(50%_50%,white,transparent)]" />
+      <div className="relative px-6 md:px-8 py-7">
+        <div className="mb-6 flex items-end justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#6EA8D8] font-['Plus_Jakarta_Sans']">Riwayat</p>
+            <h1 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-white font-['Plus_Jakarta_Sans']">Analisis tersimpan</h1>
+            <p className="mt-1 text-[12px] text-white/46 font-['Plus_Jakarta_Sans']">{HISTORY_DATA.length} laporan siap dibuka ulang</p>
+          </div>
+          <button onClick={() => onNavigate("home")} className="flex items-center gap-1.5 rounded-full border border-blue-500/50 bg-gradient-to-t from-blue-500 to-blue-600 px-4 py-2 text-[13px] font-semibold text-white shadow-lg shadow-blue-900/40 transition-all hover:from-blue-400 hover:to-blue-600 font-['Plus_Jakarta_Sans']">
+            <FileText size={14} /> Analisis Baru
+          </button>
         </div>
-        <button onClick={() => onNavigate("home")} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#0D1829] text-white text-[13px] font-['Plus_Jakarta_Sans'] font-semibold hover:bg-[#1a2d4a] transition-all">
-          <FileText size={14} /> Analisis Baru
-        </button>
-      </div>
-
-      <div className="px-6 md:px-8 py-6">
         {/* Search */}
         <div className="flex gap-3 mb-6">
-          <div className="flex-1 flex items-center gap-2.5 bg-card border border-border rounded-xl px-4 py-2.5 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/50 transition-all">
-            <Search size={15} className="text-muted-foreground shrink-0" />
+          <div className="flex-1 flex items-center gap-2.5 bg-white/[0.055] border border-white/10 rounded-xl px-4 py-2.5 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/50 transition-all">
+            <Search size={15} className="text-white/45 shrink-0" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari analisis..."
-              className="flex-1 bg-transparent text-[13px] font-['Plus_Jakarta_Sans'] text-foreground outline-none placeholder:text-muted-foreground" />
+              className="flex-1 bg-transparent text-[13px] font-['Plus_Jakarta_Sans'] text-white outline-none placeholder:text-white/36" />
           </div>
         </div>
 
         {/* Desktop table */}
-        <div className="hidden md:block bg-card rounded-xl border border-border overflow-hidden">
+        <div className="hidden md:block overflow-hidden rounded-2xl border border-white/10 bg-white/[0.055] shadow-[0_22px_90px_rgba(0,0,0,0.25)]">
           <table className="w-full text-[13px] font-['Plus_Jakarta_Sans']">
-            <thead className="bg-muted/50">
+            <thead className="bg-white/[0.055]">
               <tr>
                 {["Topik Analisis", "Tanggal", "Tag", "Sentimen", "Skor", ""].map(h => (
-                  <th key={h} className="text-left px-5 py-3 text-[11px] font-bold text-muted-foreground uppercase tracking-wide">{h}</th>
+                  <th key={h} className="text-left px-5 py-3 text-[11px] font-bold text-white/42 uppercase tracking-wide">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtered.map((item) => (
-                <tr key={item.id} className="border-t border-border hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => onOpenReport(item.topic)}>
-                  <td className="px-5 py-3.5 font-medium text-foreground max-w-xs">
+                <tr key={item.id} className="border-t border-white/10 hover:bg-white/[0.055] transition-colors cursor-pointer" onClick={() => onOpenReport(item.topic)}>
+                  <td className="px-5 py-3.5 font-medium text-white max-w-xs">
                     <span className="truncate block">{item.topic}</span>
                   </td>
-                  <td className="px-5 py-3.5 text-muted-foreground whitespace-nowrap">
+                  <td className="px-5 py-3.5 text-white/48 whitespace-nowrap">
                     <span className="font-mono">{item.date}</span>
                     <span className="text-muted-foreground/50 ml-1.5">{item.time}</span>
                   </td>
                   <td className="px-5 py-3.5">
-                    <span className="px-2 py-0.5 rounded-md bg-muted text-[11px] font-medium text-muted-foreground">{item.tag}</span>
+                    <span className="px-2 py-0.5 rounded-md bg-white/8 text-[11px] font-medium text-white/50">{item.tag}</span>
                   </td>
                   <td className="px-5 py-3.5">
                     <span className={cn("text-[12px] font-semibold", item.sentiment === "Positif" ? "text-emerald-600" : item.sentiment === "Negatif" ? "text-red-600" : "text-amber-600")}>
@@ -2497,14 +2499,14 @@ function HistoryView({ onNavigate, onOpenReport }: { onNavigate: (s: Screen) => 
                   </td>
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-2">
-                      <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div className="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
                         <div className="h-full bg-primary rounded-full" style={{ width: `${item.score}%` }} />
                       </div>
-                      <span className="font-mono text-foreground font-medium">{item.score}</span>
+                      <span className="font-mono text-white font-medium">{item.score}</span>
                     </div>
                   </td>
                   <td className="px-5 py-3.5">
-                    <button className="px-3 py-1 rounded-lg border border-border text-[12px] font-medium text-foreground hover:bg-muted transition-all">
+                    <button className="px-3 py-1 rounded-lg border border-white/10 text-[12px] font-medium text-white/70 hover:bg-white/8 transition-all">
                       Buka →
                     </button>
                   </td>
@@ -2518,19 +2520,19 @@ function HistoryView({ onNavigate, onOpenReport }: { onNavigate: (s: Screen) => 
         <div className="md:hidden space-y-3">
           {filtered.map((item) => (
             <button key={item.id} onClick={() => onOpenReport(item.topic)}
-              className="w-full bg-card rounded-xl border border-border p-4 text-left hover:border-primary/40 transition-all">
+              className="w-full rounded-2xl border border-white/10 bg-white/[0.055] p-4 text-left transition-all hover:border-blue-400/50 hover:bg-white/[0.075]">
               <div className="flex items-start justify-between gap-2 mb-2">
-                <span className="px-2 py-0.5 rounded bg-muted text-[11px] font-medium text-muted-foreground">{item.tag}</span>
-                <span className="text-[11px] font-mono text-muted-foreground shrink-0">{item.date}</span>
+                <span className="px-2 py-0.5 rounded bg-white/8 text-[11px] font-medium text-white/50">{item.tag}</span>
+                <span className="text-[11px] font-mono text-white/45 shrink-0">{item.date}</span>
               </div>
-              <p className="text-[14px] font-semibold font-['Plus_Jakarta_Sans'] text-foreground mb-2 leading-snug">{item.topic}</p>
+              <p className="text-[14px] font-semibold font-['Plus_Jakarta_Sans'] text-white mb-2 leading-snug">{item.topic}</p>
               <div className="flex items-center justify-between">
                 <span className={cn("text-[12px] font-semibold", item.sentiment === "Positif" ? "text-emerald-600" : item.sentiment === "Negatif" ? "text-red-600" : "text-amber-600")}>{item.sentiment}</span>
                 <div className="flex items-center gap-2">
-                  <div className="w-14 h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div className="w-14 h-1.5 bg-white/10 rounded-full overflow-hidden">
                     <div className="h-full bg-primary rounded-full" style={{ width: `${item.score}%` }} />
                   </div>
-                  <span className="text-[12px] font-mono text-foreground font-medium">{item.score}</span>
+                  <span className="text-[12px] font-mono text-white font-medium">{item.score}</span>
                 </div>
               </div>
             </button>
@@ -2576,15 +2578,17 @@ function AccountView({ mode = "account", onLogout, language, onLanguageChange, t
   };
 
   return (
-    <div className="min-h-full">
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-6 md:px-8 py-4 flex items-center justify-between">
-        <h1 className={`text-lg font-bold text-foreground ${JK}`}>{mode === "subscription" ? "Langganan" : "Akun & Pengaturan"}</h1>
-        <button onClick={onLogout} className={`flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors ${JK}`}>
-          <LogOut size={15} /> Keluar
-        </button>
-      </div>
+    <div className={cn("min-h-full", mode === "subscription" && "bg-[#03040a]")}>
+      {mode === "account" && (
+        <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-6 md:px-8 py-4 flex items-center justify-between">
+          <h1 className={`text-lg font-bold text-foreground ${JK}`}>Akun & Pengaturan</h1>
+          <button onClick={onLogout} className={`flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors ${JK}`}>
+            <LogOut size={15} /> Keluar
+          </button>
+        </div>
+      )}
 
-      <div className="w-full px-6 md:px-8 py-6">
+      <div className={cn("w-full", mode === "subscription" ? "p-0" : "px-6 md:px-8 py-6")}>
         {mode === "account" && (
           <>
         <div className="bg-card rounded-[1.6rem] border border-border p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5 mb-8 shadow-[0_18px_48px_-34px_rgba(32,33,29,0.28)]">
@@ -2614,7 +2618,7 @@ function AccountView({ mode = "account", onLogout, language, onLanguageChange, t
               <p className={`text-[13px] font-semibold text-foreground ${JK}`}>Penggunaan Bulan Ini</p>
               <span className="text-[13px] font-mono text-muted-foreground">1 / 3 analisis</span>
             </div>
-            <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+            <div className="h-2.5 bg-white/10 rounded-full overflow-hidden">
               <div className="h-full bg-primary rounded-full transition-all" style={{ width: "33%" }} />
             </div>
             <p className={`text-[12px] text-muted-foreground mt-2 ${JK}`}>Reset pada 1 Agustus 2026</p>
@@ -2653,7 +2657,7 @@ function AccountView({ mode = "account", onLogout, language, onLanguageChange, t
         )}
 
         {mode === "subscription" && (
-        <section className="relative min-h-[calc(100dvh-9rem)] overflow-hidden rounded-[2rem] bg-[#03040a] text-white ring-1 ring-white/10">
+        <section className="relative min-h-full overflow-hidden bg-[#03040a] text-white">
           <div className="pointer-events-none absolute inset-x-[-25%] top-[-42rem] h-[70rem] rounded-full border-[10rem] border-[#3131f5]/70 blur-[96px]" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-[26rem] bg-[linear-gradient(to_right,rgba(255,255,255,0.15)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:72px_82px] opacity-70 [mask-image:radial-gradient(50%_50%,white,transparent)]" />
           <div className="pointer-events-none absolute left-[8%] top-24 h-[34rem] w-[84%] rounded-full bg-[#206ce8] opacity-30 blur-[130px] mix-blend-screen" />
