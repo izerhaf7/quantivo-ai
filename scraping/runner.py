@@ -246,6 +246,9 @@ def create_runner(
             MockBpsModule,
             MockDataboksModule,
             MockTiktokModule,
+            MockFacebookSearchModule,
+            MockInstagramModule,
+            MockXModule,
         )
         return ScraperRunner(modules=[
             MockPlacesModule(),
@@ -254,6 +257,9 @@ def create_runner(
             MockBpsModule(),
             MockDataboksModule(),
             MockTiktokModule(),
+            MockFacebookSearchModule(),
+            MockInstagramModule(),
+            MockXModule(),
         ])
 
     from .modules import (
@@ -263,6 +269,9 @@ def create_runner(
         BpsModule,
         DataboksModule,
         BrightDataTiktokModule,
+        FacebookSearchModule,
+        InstagramModule,
+        XModule,
     )
 
     modules = []
@@ -283,6 +292,10 @@ def create_runner(
             modules.append(DataboksModule(api_key=api_keys["databoks"]))
         if api_keys.get("brightdata"):
             modules.append(BrightDataTiktokModule(api_key=api_keys["brightdata"]))
+            modules.append(InstagramModule(api_key=api_keys["brightdata"]))
+            modules.append(XModule(api_key=api_keys["brightdata"]))
+        if api_keys.get("socialapis"):
+            modules.append(FacebookSearchModule(api_key=api_keys["socialapis"]))
     else:
         # Try to use env vars — modules degrade gracefully if key is missing
         modules = [
@@ -292,6 +305,9 @@ def create_runner(
             BpsModule(),
             DataboksModule(),
             BrightDataTiktokModule(),
+            FacebookSearchModule(),
+            InstagramModule(),
+            XModule(),
         ]
 
     return ScraperRunner(modules=modules)

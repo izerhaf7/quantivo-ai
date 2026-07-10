@@ -21,6 +21,9 @@ from .trends import TrendsModule, MockTrendsModule
 from .bps import BpsModule, MockBpsModule
 from .databoks import DataboksModule, MockDataboksModule
 from .brightdata import BrightDataTiktokModule, MockTiktokModule
+from .facebook_search import FacebookSearchModule, MockFacebookSearchModule
+from .instagram import InstagramModule, MockInstagramModule
+from .x_twitter import XModule, MockXModule
 
 __all__ = [
     # Real implementations
@@ -30,6 +33,9 @@ __all__ = [
     "BpsModule",
     "DataboksModule",
     "BrightDataTiktokModule",
+    "FacebookSearchModule",
+    "InstagramModule",
+    "XModule",
     # Mock implementations (for testing without API keys)
     "MockPlacesModule",
     "MockWebSearchModule",
@@ -37,4 +43,7 @@ __all__ = [
     "MockBpsModule",
     "MockDataboksModule",
     "MockTiktokModule",
+    "MockFacebookSearchModule",
+    "MockInstagramModule",
+    "MockXModule",
 ]

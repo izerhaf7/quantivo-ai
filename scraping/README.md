@@ -8,7 +8,7 @@
 
 ## Overview
 
-This module implements the `ScraperModule` protocol from `contracts/interfaces.py`. It provides **6 data source modules** that collect `RawDataItem[]` for the analysis pipeline.
+This module implements the `ScraperModule` protocol from `contracts/interfaces.py`. It provides **9 data source modules** that collect `RawDataItem[]` for the analysis pipeline.
 
 ## Architecture
 
@@ -23,7 +23,10 @@ scraping/
 │   ├── trends.py            # Google Trends (SerpApi)
 │   ├── bps.py               # BPS Statistics
 │   ├── databoks.py          # Databoks Market Data
-│   └── brightdata.py        # BrightData TikTok Scraper
+│   ├── brightdata.py        # BrightData TikTok Scraper
+│   ├── facebook_search.py   # Facebook Posts (SocialAPIs)
+│   ├── instagram.py         # Instagram Profiles/Posts (BrightData)
+│   └── x_twitter.py         # X/Twitter Posts (BrightData)
 ├── demo_kue_pancong.py      # E2E demo (scraper + router)
 ├── test_scrapers.py         # Module unit tests
 └── test_runner.py           # Integration tests
@@ -57,6 +60,9 @@ print(f"Degradation: {result.degradation_notes}")
 | `BpsModule` | BPS_STAT | `BPS_API_KEY` | Indonesian government statistics | — |
 | `DataboksModule` | DATABOKS | `DATABOKS_API_KEY` | Curated market datasets | — |
 | `BrightDataTiktokModule` | SOCIAL | `BRIGHTDATA_API_KEY` | TikTok posts by keyword | ✅ |
+| `FacebookSearchModule` | FORUM | `SOCIALAPIS_API_KEY` | Facebook posts by keyword | — |
+| `InstagramModule` | REVIEW | `BRIGHTDATA_API_KEY` | Instagram profiles/posts/reels | — |
+| `XModule` | NEWS | `BRIGHTDATA_API_KEY` | X/Twitter posts | — |
 
 ## ScraperRunner Features
 
@@ -108,6 +114,7 @@ export SERPAPI_API_KEY="..."
 export BPS_API_KEY="..."
 export DATABOKS_API_KEY="..."
 export BRIGHTDATA_API_KEY="..."
+export SOCIALAPIS_API_KEY="..."
 ```
 
 ## E2E Demo
