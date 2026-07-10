@@ -2,26 +2,23 @@
 backend/main.py — BOA SaaS FastAPI app (real running backend).
 
 Same REST contract as contracts/api_stub.py (kept there as Indra's frontend
-reference stub). This module is what actually runs. Job storage and pipeline
-wiring are filled in by later tasks (see store.py, orchestrator.py).
+reference stub). This module is what actually runs.
 """
 from __future__ import annotations
 
 import asyncio
+import os
+from contextlib import asynccontextmanager
 from datetime import timedelta
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 
 from contracts import (
     _now, BusinessInput, ScopeConfig, AnalysisStatus,
     CreateAnalysisResponse, AnalysisStatusResponse, ProgressStage,
     Report, Visualizations,
 )
-
-app = FastAPI(title="BOA SaaS API", version="1.0.0")
-
-# In-memory store for this task only — replaced by JobStore (Redis) in Task 2.
-_JOBS: dict[str, dict] = {}
+from store import JobStore
 
 _STAGE_PCT = {
     AnalysisStatus.AWAITING_CONFIRMATION: 0,
@@ -43,6 +40,21 @@ _STAGE_VERB = {
     "established": "menganalisis peluang pertumbuhan",
     "expanding": "menilai ekspansi",
 }
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379")
+    app.state.store = JobStore(redis_url)
+    yield
+    await app.state.store.close()
+
+
+app = FastAPI(title="BOA SaaS API", version="1.0.0", lifespan=lifespan)
+
+
+def get_store() -> JobStore:
+    return app.state.store
 
 
 def _build_scope(inp: BusinessInput) -> ScopeConfig:
@@ -69,15 +81,16 @@ def _build_scope(inp: BusinessInput) -> ScopeConfig:
 
 
 @app.get("/health")
-async def health() -> dict:
-    return {"status": "ok"}
+async def health(store: JobStore = Depends(get_store)) -> dict:
+    return {"status": "ok", "redis": "ok" if await store.ping() else "unreachable"}
 
 
 @app.post("/api/analyses", response_model=CreateAnalysisResponse)
-async def create_analysis(inp: BusinessInput) -> CreateAnalysisResponse:
+async def create_analysis(
+    inp: BusinessInput, store: JobStore = Depends(get_store)
+) -> CreateAnalysisResponse:
     scope = _build_scope(inp)
-    _JOBS[scope.scope_id] = {"status": AnalysisStatus.AWAITING_CONFIRMATION,
-                             "scope": scope, "report": None}
+    await store.create(scope)
     return CreateAnalysisResponse(
         analysis_id=scope.scope_id,
         status=AnalysisStatus.AWAITING_CONFIRMATION,
@@ -86,62 +99,68 @@ async def create_analysis(inp: BusinessInput) -> CreateAnalysisResponse:
 
 
 @app.post("/api/analyses/{analysis_id}/confirm", response_model=AnalysisStatusResponse)
-async def confirm_analysis(analysis_id: str) -> AnalysisStatusResponse:
-    job = _JOBS.get(analysis_id)
-    if not job:
+async def confirm_analysis(
+    analysis_id: str, store: JobStore = Depends(get_store)
+) -> AnalysisStatusResponse:
+    job = await store.get(analysis_id)
+    if job is None:
         raise HTTPException(404, "analysis not found")
-    job["status"] = AnalysisStatus.CONFIRMED
+    await store.set_status(analysis_id, AnalysisStatus.CONFIRMED)
     # TODO(arq): ganti create_task -> enqueue ke arq worker (durable). Lihat
     # docs/superpowers/specs/2026-07-10-backend-orchestrator-design.md.
-    asyncio.create_task(_run_pipeline(analysis_id))
-    return _status_response(analysis_id)
+    asyncio.create_task(_run_pipeline(analysis_id, job["scope"], store))
+    return await _status_response(analysis_id, store)
 
 
 @app.get("/api/analyses/{analysis_id}", response_model=AnalysisStatusResponse)
-async def get_status(analysis_id: str) -> AnalysisStatusResponse:
-    if analysis_id not in _JOBS:
+async def get_status(
+    analysis_id: str, store: JobStore = Depends(get_store)
+) -> AnalysisStatusResponse:
+    job = await store.get(analysis_id)
+    if job is None:
         raise HTTPException(404, "analysis not found")
-    return _status_response(analysis_id)
+    return await _status_response(analysis_id, store)
 
 
 @app.get("/api/analyses/{analysis_id}/report", response_model=Report)
-async def get_report(analysis_id: str) -> Report:
-    job = _JOBS.get(analysis_id)
-    if not job:
+async def get_report(
+    analysis_id: str, store: JobStore = Depends(get_store)
+) -> Report:
+    job = await store.get(analysis_id)
+    if job is None:
         raise HTTPException(404, "analysis not found")
-    if not job["report"]:
+    if job["report"] is None:
         raise HTTPException(409, "report belum siap; polling status dulu")
     return job["report"]
 
 
-def _status_response(analysis_id: str) -> AnalysisStatusResponse:
-    job = _JOBS[analysis_id]
+async def _status_response(analysis_id: str, store: JobStore) -> AnalysisStatusResponse:
+    job = await store.get(analysis_id)
     st: AnalysisStatus = job["status"]
     return AnalysisStatusResponse(
         analysis_id=analysis_id,
         status=st,
         progress=ProgressStage(status=st, pct=_STAGE_PCT[st], message=st.value),
-        sections_ready=job.get("sections_ready", []),
+        sections_ready=job["sections_ready"],
     )
 
 
-async def _run_pipeline(analysis_id: str) -> None:
-    job = _JOBS[analysis_id]
-    scope: ScopeConfig = job["scope"]
+async def _run_pipeline(analysis_id: str, scope: ScopeConfig, store: JobStore) -> None:
+    """Dummy pipeline for this task only — replaced by OrchestratorImpl.run() in Task 3."""
     try:
         for stage in (AnalysisStatus.SCRAPING, AnalysisStatus.ROUTING,
                       AnalysisStatus.PREPROCESSING, AnalysisStatus.INDEXING):
-            job["status"] = stage
+            await store.set_status(analysis_id, stage)
             await asyncio.sleep(0.3)
 
-        job["status"] = AnalysisStatus.ANALYZING
+        await store.set_status(analysis_id, AnalysisStatus.ANALYZING)
         await asyncio.sleep(0.5)
-        job["sections_ready"] = ["sentiment", "swot"]
+        await store.set_sections_ready(analysis_id, ["sentiment", "swot"])
 
-        job["status"] = AnalysisStatus.COMPOSING
+        await store.set_status(analysis_id, AnalysisStatus.COMPOSING)
         await asyncio.sleep(0.3)
 
-        job["report"] = Report(
+        await store.set_report(analysis_id, Report(
             scope_id=scope.scope_id,
             status=AnalysisStatus.COMPLETED,
             executive_summary="(dummy) ringkasan eksekutif",
@@ -149,8 +168,8 @@ async def _run_pipeline(analysis_id: str) -> None:
             recommendations=["(dummy) rekomendasi"],
             narrative="(dummy) narasi laporan",
             visualizations=Visualizations(),
-        )
-        job["status"] = AnalysisStatus.COMPLETED
+        ))
+        await store.set_status(analysis_id, AnalysisStatus.COMPLETED)
     except Exception as e:                       # noqa: BLE001
-        job["status"] = AnalysisStatus.FAILED
-        job["error"] = str(e)
+        await store.set_status(analysis_id, AnalysisStatus.FAILED)
+        await store.set_error(analysis_id, str(e))
