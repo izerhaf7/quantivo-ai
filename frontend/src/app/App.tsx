@@ -447,7 +447,7 @@ function InputField({
   return (
     <div className="rounded-[1.35rem] bg-foreground/5 p-1 ring-1 ring-foreground/10 transition-[background,box-shadow] duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] focus-within:bg-primary/10 focus-within:ring-primary/25">
       <div className="flex items-center gap-3 rounded-[calc(1.35rem-0.25rem)] bg-card px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]">
-        {Icon && <Icon size={17} strokeWidth={1.8} className="text-white/45 shrink-0" />}
+        {Icon && <Icon size={17} strokeWidth={1.8} className="text-muted-foreground shrink-0" />}
         <input
           type={type} placeholder={placeholder} value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -518,10 +518,7 @@ function AuthSplit({ children, title, subtitle, language, onLanguageChange, them
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background bg-[radial-gradient(circle_at_50%_-10%,rgba(42,116,196,0.10),transparent_34%),linear-gradient(180deg,rgba(255,254,250,0.72),rgba(246,244,239,0))]">
       <header className="border-b border-border bg-card/60 px-6 py-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-40">
-        <div className="flex items-center gap-2.5">
-          <ImageWithFallback src={CLogoImg} alt="Consultin" className="w-6 h-6 object-contain" />
-          <span className="font-bold text-sm font-['Plus_Jakarta_Sans'] text-foreground">Consultin</span>
-        </div>
+        <ImageWithFallback src={ConsultinLogo} alt="Consultin" className="h-7 w-auto object-contain" />
       </header>
 
       <div className="flex-1 flex items-center justify-center p-6 md:p-12 relative">
