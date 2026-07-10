@@ -36,7 +36,7 @@ class FireworksLLMClient:
     """
     BASE_URL = "https://api.fireworks.ai/inference/v1/chat/completions"
 
-    def __init__(self, model: str = "accounts/fireworks/models/llama-v3p3-70b-instruct",
+    def __init__(self, model: str = "accounts/fireworks/models/deepseek-v4-pro",
                  api_key: str | None = None, temperature: float = 0.2):
         self.model = model
         self.api_key = api_key or os.environ.get("FIREWORKS_API_KEY", "")

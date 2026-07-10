@@ -108,18 +108,25 @@ PYTHONPATH="contracts;ml" uv run python ml/llm_demo.py
 
 | Mock (demo) | Produksi |
 |---|---|
-| `MockLLMClient()` | `FireworksLLMClient(model=...)` (set `FIREWORKS_API_KEY`) — pakai model KECIL (7-8B) utk `SentimentAgentImpl` (dipanggil per-chunk), model BESAR (70B) utk `SwotAgentImpl`/`SummaryAgentImpl` (sekali per report). Lihat `llm_demo.py` |
+| `MockLLMClient()` | `FireworksLLMClient(model=...)` (set `FIREWORKS_API_KEY`) — pakai model KECIL/cepat utk `SentimentAgentImpl` (dipanggil per-chunk), model BESAR/reasoning-kuat utk `SwotAgentImpl`/`SummaryAgentImpl` (sekali per report). Lihat `llm_demo.py` |
 | `MockRetriever(chunks)` | `QdrantRetriever(embedder=..., url="http://<qdrant-host>:6333")` (`retriever.py`) |
 | `MockEmbeddingClient()` | `TEIEmbeddingClient()` (server self-host BGE-M3, set `EMBEDDING_BASE_URL`) atau `LocalBGEM3EmbeddingClient()` (dev lokal via `FlagEmbedding`) |
 | `HeuristicRerankAgent()` | BGE-reranker-v2-m3 di dalam `rerank()` (cross-encoder) |
 
-**Catatan `FireworksLLMClient`**: sudah diwire lengkap (`llm.py`) dan siap
-jalan (`llm_demo.py`) begitu `FIREWORKS_API_KEY` diisi (kredit $50 dari AMD
-AI Developer Program, lihat `spesifikasi-teknis-boa-saas.md`). Status per
-dokumen ini: **BELUM dijalankan dengan key sungguhan** — beda dari
-`TEIEmbeddingClient` di bawah yang sudah. Begitu `llm_demo.py` sukses jalan,
-update catatan ini jadi "diverifikasi jalan nyata" + hasil aslinya, jangan
-biarkan dokumen bilang "belum" kalau sebenarnya sudah teruji.
+**Catatan `FireworksLLMClient`**: sudah **diverifikasi jalan nyata** —
+`llm_demo.py` dijalankan dengan `FIREWORKS_API_KEY` sungguhan (kredit $50 dari
+AMD AI Developer Program), tanpa mock di jalur reasoning-nya, dan berhasil:
+`Report.status = completed`, `degradation_notes` kosong, narrative/SWOT/
+sentiment/rekomendasi semuanya hasil reasoning nyata (bukan placeholder).
+Satu temuan penting: slug model saran spesifikasi (Llama 3.x 8B/70B) sudah
+**tidak ada lagi** di katalog serverless Fireworks — `GET
+/inference/v1/models` terhadap akun tim saat ini cuma mengembalikan 7 model
+chat, tak satupun kelas 8B. Diganti dengan model yang benar-benar ada di akun:
+`accounts/fireworks/models/gpt-oss-120b` (peran kecil/cepat, dipakai
+`SentimentAgentImpl`) dan `accounts/fireworks/models/deepseek-v4-pro` (peran
+besar/reasoning, dipakai `SwotAgentImpl`/`SummaryAgentImpl`) — lihat
+`llm_demo.py`. Cek ulang `/models` sebelum hardcode slug lain manapun,
+katalog Fireworks berubah dari waktu ke waktu.
 
 **Catatan `TEIEmbeddingClient`**: kontrak `/embed`-nya sudah **diverifikasi
 jalan nyata** terhadap model BGE-M3 sungguhan di GPU AMD asli (gfx1100/RDNA3,
@@ -166,8 +173,8 @@ Di dalam orchestrator (`api_stub.py::_run_pipeline`), setelah RAG ingestion:
 from graph import build_agent_graph, run_analysis
 from llm import FireworksLLMClient
 
-fireworks_small = FireworksLLMClient(model="accounts/fireworks/models/llama-v3p1-8b-instruct")
-fireworks_large = FireworksLLMClient(model="accounts/fireworks/models/llama-v3p3-70b-instruct")
+fireworks_small = FireworksLLMClient(model="accounts/fireworks/models/gpt-oss-120b")
+fireworks_large = FireworksLLMClient(model="accounts/fireworks/models/deepseek-v4-pro")
 
 graph = build_agent_graph(
     retriever=qdrant_retriever,

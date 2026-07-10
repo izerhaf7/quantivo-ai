@@ -44,8 +44,8 @@ from graph import build_agent_graph, run_analysis
 
 FIXTURES = Path(__file__).resolve().parent.parent / "fixtures" / "raw_data_items.sample.json"
 
-FIREWORKS_SMALL_MODEL = "accounts/fireworks/models/llama-v3p1-8b-instruct"
-FIREWORKS_LARGE_MODEL = "accounts/fireworks/models/llama-v3p3-70b-instruct"
+FIREWORKS_SMALL_MODEL = "accounts/fireworks/models/gpt-oss-120b"
+FIREWORKS_LARGE_MODEL = "accounts/fireworks/models/deepseek-v4-pro"
 
 
 class MockRetriever:
@@ -60,8 +60,11 @@ class MockRetriever:
         return [RetrievedChunk(chunk=c, dense_score=0.7, sparse_score=0.3) for c in hits]
 
 
+ROOT_ENV = Path(__file__).resolve().parent.parent / ".env"
+
+
 async def main():
-    load_dotenv()
+    load_dotenv(ROOT_ENV)  # explicit path -- always the repo-root .env, never a search
     if not os.environ.get("FIREWORKS_API_KEY"):
         sys.exit("FIREWORKS_API_KEY tidak diset. Copy .env.example -> .env dan isi key-nya dulu.")
 
