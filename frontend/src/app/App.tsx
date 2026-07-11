@@ -31,6 +31,18 @@ type Screen =
 
 type ThemeMode = "light" | "dark";
 type Language = "id" | "en";
+type Level = "low" | "medium" | "high";
+type SentimentTag = "positive" | "neutral" | "negative";
+
+const LEVEL_LABEL: Record<Language, Record<Level, string>> = {
+  id: { low: "Rendah", medium: "Sedang", high: "Tinggi" },
+  en: { low: "Low", medium: "Medium", high: "High" },
+};
+
+const SENTIMENT_LABEL: Record<Language, Record<SentimentTag, string>> = {
+  id: { positive: "Positif", neutral: "Netral", negative: "Negatif" },
+  en: { positive: "Positive", neutral: "Neutral", negative: "Negative" },
+};
 
 const UI_COPY = {
   id: {
@@ -196,6 +208,35 @@ const UI_COPY = {
     historyAction: "Aksi",
     historyOpen: "Buka",
     historyDeleted: "Laporan dihapus",
+    historySavedAnalyses: "Analisis tersimpan",
+    historySearchShort: "Cari analisis...",
+
+    // Report extras
+    reportMetaAgents: "agen",
+    reportDataPoints: "data points",
+    keyMetrics: "Metrik Kunci",
+    marketViabilityScore: "Skor kelayakan",
+    activeCompetitorsCount: "5 aktif",
+    sentimentDistribution: "Distribusi Sentimen",
+    claimConfidenceLevel: "Tingkat Kepercayaan Klaim",
+    viewFullReportShort: "Lihat Full Report",
+    createSlideDeckShort: "Buat Slide Deck",
+    newAnalysisFull: "Analisis Baru",
+    strategicPriorities: "Prioritas strategis",
+    impactSuffix: "impact",
+
+    // Full Report extras
+    tableOfContents: "Daftar Isi",
+    downloadPdf: "Unduh PDF",
+    competitor: "Kompetitor",
+    distributionPerPlatform: "Distribusi per Platform",
+    reviewsSeries: "Ulasan",
+    effortPrefix: "Upaya",
+
+    // Slide Deck extras
+    backToReport: "Kembali ke Report",
+    exportBtn: "Export",
+    reviewsBasis: "Berdasarkan 847 ulasan dari 4 platform",
 
     // Account / Pricing
     accountHeading: "Akun & Langganan",
@@ -371,6 +412,35 @@ const UI_COPY = {
     historyAction: "Action",
     historyOpen: "Open",
     historyDeleted: "Report deleted",
+    historySavedAnalyses: "Saved analyses",
+    historySearchShort: "Search analyses...",
+
+    // Report extras
+    reportMetaAgents: "agents",
+    reportDataPoints: "data points",
+    keyMetrics: "Key Metrics",
+    marketViabilityScore: "Viability score",
+    activeCompetitorsCount: "5 active",
+    sentimentDistribution: "Sentiment Distribution",
+    claimConfidenceLevel: "Claim Confidence Level",
+    viewFullReportShort: "View Full Report",
+    createSlideDeckShort: "Create Slide Deck",
+    newAnalysisFull: "New Analysis",
+    strategicPriorities: "Strategic priorities",
+    impactSuffix: "impact",
+
+    // Full Report extras
+    tableOfContents: "Table of Contents",
+    downloadPdf: "Download PDF",
+    competitor: "Competitor",
+    distributionPerPlatform: "Distribution by Platform",
+    reviewsSeries: "Reviews",
+    effortPrefix: "Effort",
+
+    // Slide Deck extras
+    backToReport: "Back to Report",
+    exportBtn: "Export",
+    reviewsBasis: "Based on 847 reviews across 4 platforms",
 
     // Account / Pricing
     accountHeading: "Account & Subscription",
@@ -386,16 +456,9 @@ const UI_COPY = {
 } as const;
 
 // ─── Shared data ──────────────────────────────────────────────────────────────
-const REPORT_DATA = {
-  topic: "Kafe Spesialti di Area Dago, Bandung",
-  date: "8 Juli 2026",
+const REPORT_DATA_SHARED = {
   overallScore: 82,
   sentimentPos: 71, sentimentNeu: 18, sentimentNeg: 11,
-  sentimentTrend: [
-    { month: "Jan", pos: 62, neg: 18 }, { month: "Feb", pos: 65, neg: 16 },
-    { month: "Mar", pos: 68, neg: 15 }, { month: "Apr", pos: 70, neg: 13 },
-    { month: "Mei", pos: 71, neg: 11 }, { month: "Jun", pos: 74, neg: 10 },
-  ],
   revenueProjection: [
     { q: "Q1 '26", base: 420, opt: 520 }, { q: "Q2 '26", base: 480, opt: 610 },
     { q: "Q3 '26", base: 530, opt: 680 }, { q: "Q4 '26", base: 610, opt: 790 },
@@ -405,32 +468,90 @@ const REPORT_DATA = {
     { name: "Filosofi Kopi", score: 84, share: 18, growth: "+8%" },
     { name: "Kopi Tuku", score: 79, share: 15, growth: "+15%" },
     { name: "Anomali Coffee", score: 76, share: 11, growth: "+5%" },
-    { name: "Target UMKM", score: 68, share: 6, growth: "Baru" },
   ],
-  swot: {
-    strengths: ["Lokasi strategis dekat kampus ITB & Unpad", "Konsep specialty coffee yang unik & Instagram-worthy", "Harga premium terjangkau (Rp 32-58k)"],
-    weaknesses: ["Brand awareness masih rendah vs. chain nasional", "Kapasitas seating terbatas (max 40 pax)", "Keterbatasan modal untuk ekspansi"],
-    opportunities: ["Pertumbuhan komunitas coffee enthusiast Bandung +34% YoY", "Tren work-from-café pasca pandemi belum jenuh", "Potensi kolaborasi dengan local roaster"],
-    threats: ["Masuknya chain nasional Kopi Kenangan di koridor Dago", "Kenaikan harga biji kopi arabica +22% (2026)", "Regulasi UMKM digital belum jelas"],
+};
+
+const REPORT_DATA: Record<Language, {
+  topic: string; date: string; overallScore: number;
+  sentimentPos: number; sentimentNeu: number; sentimentNeg: number;
+  sentimentTrend: { month: string; pos: number; neg: number }[];
+  revenueProjection: { q: string; base: number; opt: number }[];
+  competitors: { name: string; score: number; share: number; growth: string }[];
+  swot: { strengths: string[]; weaknesses: string[]; opportunities: string[]; threats: string[] };
+  priorities: { rank: number; title: string; impact: Level; effort: Level; timeframe: string }[];
+  risks: { risk: string; prob: Level; impact: Level; mitigation: string }[];
+  claims: { text: string; source: string; conf: number }[];
+}> = {
+  id: {
+    topic: "Kafe Spesialti di Area Dago, Bandung",
+    date: "8 Juli 2026",
+    ...REPORT_DATA_SHARED,
+    competitors: [...REPORT_DATA_SHARED.competitors, { name: "Target UMKM", score: 68, share: 6, growth: "Baru" }],
+    sentimentTrend: [
+      { month: "Jan", pos: 62, neg: 18 }, { month: "Feb", pos: 65, neg: 16 },
+      { month: "Mar", pos: 68, neg: 15 }, { month: "Apr", pos: 70, neg: 13 },
+      { month: "Mei", pos: 71, neg: 11 }, { month: "Jun", pos: 74, neg: 10 },
+    ],
+    swot: {
+      strengths: ["Lokasi strategis dekat kampus ITB & Unpad", "Konsep specialty coffee yang unik & Instagram-worthy", "Harga premium terjangkau (Rp 32-58k)"],
+      weaknesses: ["Brand awareness masih rendah vs. chain nasional", "Kapasitas seating terbatas (max 40 pax)", "Keterbatasan modal untuk ekspansi"],
+      opportunities: ["Pertumbuhan komunitas coffee enthusiast Bandung +34% YoY", "Tren work-from-café pasca pandemi belum jenuh", "Potensi kolaborasi dengan local roaster"],
+      threats: ["Masuknya chain nasional Kopi Kenangan di koridor Dago", "Kenaikan harga biji kopi arabica +22% (2026)", "Regulasi UMKM digital belum jelas"],
+    },
+    priorities: [
+      { rank: 1, title: "Perbaiki kehadiran digital", impact: "high", effort: "low", timeframe: "0-3 bln" },
+      { rank: 2, title: "Uji program loyalitas", impact: "high", effort: "medium", timeframe: "1-4 bln" },
+      { rank: 3, title: "Susun ulang margin menu", impact: "medium", effort: "low", timeframe: "Segera" },
+      { rank: 4, title: "Validasi pivot work-from-café", impact: "high", effort: "high", timeframe: "6-12 bln" },
+    ],
+    risks: [
+      { risk: "Kenaikan harga bahan baku", prob: "high", impact: "medium", mitigation: "Kontrak jangka panjang dengan supplier" },
+      { risk: "Entry kompetitor baru", prob: "medium", impact: "high", mitigation: "Percepat brand differentiation" },
+      { risk: "Perubahan preferensi konsumen", prob: "low", impact: "high", mitigation: "R&D menu berkelanjutan" },
+    ],
+    claims: [
+      { text: "Sentimen positif 71%", source: "Google Maps · Trip Advisor · Instagram (n=847)", conf: 92 },
+      { text: "Pasar tumbuh 34% YoY", source: "BPS Jawa Barat · Industry Report 2026", conf: 88 },
+      { text: "Proyeksi revenue Q4 Rp790jt", source: "Model DCF internal + benchmark industri", conf: 75 },
+      { text: "CAC coffee shop Rp 45rb/pelanggan", source: "Meta Ads benchmark F&B Indonesia", conf: 83 },
+      { text: "Dwell time optimal 47 menit", source: "IoT sensor data + observasi lapangan", conf: 90 },
+    ],
   },
-  priorities: [
-    { rank: 1, title: "Perbaiki kehadiran digital", impact: "Tinggi", effort: "Rendah", timeframe: "0-3 bln" },
-    { rank: 2, title: "Uji program loyalitas", impact: "Tinggi", effort: "Sedang", timeframe: "1-4 bln" },
-    { rank: 3, title: "Susun ulang margin menu", impact: "Sedang", effort: "Rendah", timeframe: "Segera" },
-    { rank: 4, title: "Validasi pivot work-from-café", impact: "Tinggi", effort: "Tinggi", timeframe: "6-12 bln" },
-  ],
-  risks: [
-    { risk: "Kenaikan harga bahan baku", prob: "Tinggi", impact: "Sedang", mitigation: "Kontrak jangka panjang dengan supplier" },
-    { risk: "Entry kompetitor baru", prob: "Sedang", impact: "Tinggi", mitigation: "Percepat brand differentiation" },
-    { risk: "Perubahan preferensi konsumen", prob: "Rendah", impact: "Tinggi", mitigation: "R&D menu berkelanjutan" },
-  ],
-  claims: [
-    { text: "Sentimen positif 71%", source: "Google Maps · Trip Advisor · Instagram (n=847)", conf: 92 },
-    { text: "Pasar tumbuh 34% YoY", source: "BPS Jawa Barat · Industry Report 2026", conf: 88 },
-    { text: "Proyeksi revenue Q4 Rp790jt", source: "Model DCF internal + benchmark industri", conf: 75 },
-    { text: "CAC coffee shop Rp 45rb/pelanggan", source: "Meta Ads benchmark F&B Indonesia", conf: 83 },
-    { text: "Dwell time optimal 47 menit", source: "IoT sensor data + observasi lapangan", conf: 90 },
-  ],
+  en: {
+    topic: "Specialty Cafe in the Dago Area, Bandung",
+    date: "July 8, 2026",
+    ...REPORT_DATA_SHARED,
+    competitors: [...REPORT_DATA_SHARED.competitors, { name: "Target UMKM", score: 68, share: 6, growth: "New" }],
+    sentimentTrend: [
+      { month: "Jan", pos: 62, neg: 18 }, { month: "Feb", pos: 65, neg: 16 },
+      { month: "Mar", pos: 68, neg: 15 }, { month: "Apr", pos: 70, neg: 13 },
+      { month: "May", pos: 71, neg: 11 }, { month: "Jun", pos: 74, neg: 10 },
+    ],
+    swot: {
+      strengths: ["Strategic location near ITB & Unpad campuses", "Unique, Instagram-worthy specialty coffee concept", "Affordable premium pricing (Rp 32-58k)"],
+      weaknesses: ["Brand awareness still low vs. national chains", "Limited seating capacity (max 40 pax)", "Limited capital for expansion"],
+      opportunities: ["Bandung coffee-enthusiast community growing +34% YoY", "Post-pandemic work-from-cafe trend not yet saturated", "Potential collaboration with local roasters"],
+      threats: ["National chain Kopi Kenangan entering the Dago corridor", "Arabica bean prices rising +22% (2026)", "Digital SME regulation still unclear"],
+    },
+    priorities: [
+      { rank: 1, title: "Improve digital presence", impact: "high", effort: "low", timeframe: "0-3 mo" },
+      { rank: 2, title: "Pilot a loyalty program", impact: "high", effort: "medium", timeframe: "1-4 mo" },
+      { rank: 3, title: "Rework menu margins", impact: "medium", effort: "low", timeframe: "Immediate" },
+      { rank: 4, title: "Validate work-from-cafe pivot", impact: "high", effort: "high", timeframe: "6-12 mo" },
+    ],
+    risks: [
+      { risk: "Rising raw material costs", prob: "high", impact: "medium", mitigation: "Long-term supplier contracts" },
+      { risk: "New competitor entry", prob: "medium", impact: "high", mitigation: "Accelerate brand differentiation" },
+      { risk: "Shifting consumer preferences", prob: "low", impact: "high", mitigation: "Ongoing menu R&D" },
+    ],
+    claims: [
+      { text: "71% positive sentiment", source: "Google Maps · Trip Advisor · Instagram (n=847)", conf: 92 },
+      { text: "Market growing 34% YoY", source: "West Java BPS · Industry Report 2026", conf: 88 },
+      { text: "Q4 revenue projection Rp790M", source: "Internal DCF model + industry benchmark", conf: 75 },
+      { text: "Coffee shop CAC Rp 45k/customer", source: "Meta Ads F&B Indonesia benchmark", conf: 83 },
+      { text: "Optimal dwell time 47 minutes", source: "IoT sensor data + field observation", conf: 90 },
+    ],
+  },
 };
 
 // ─── Utility ──────────────────────────────────────────────────────────────────
@@ -673,26 +794,48 @@ function SplashView({ language }: { language: Language }) {
 // ─── Onboarding ───────────────────────────────────────────────────────────────
 type OnboardingPreview = "brief" | "followup" | "agents";
 
-const OB_SLIDES: { title: string; sub: string; label: string; preview: OnboardingPreview }[] = [
-  {
-    label: "Langkah 1",
-    title: "Mulai dari ide bisnis mentah",
-    sub: "Tulis dengan bahasa biasa. Consultin menyusun brief berisi industri, lokasi, target pembeli, tujuan, dan hal yang masih perlu dicek.",
-    preview: "brief",
-  },
-  {
-    label: "Langkah 2",
-    title: "Lengkapi informasi sebelum diproses",
-    sub: "Jika data kurang, Consultin bertanya singkat dulu. Analisis tidak berjalan sampai brief kamu tinjau.",
-    preview: "followup",
-  },
-  {
-    label: "Langkah 3",
-    title: "Tim analis menandai bukti dan asumsi",
-    sub: "Setiap bagian laporan menunjukkan sumber, risiko, asumsi, dan rekomendasi agar kamu tahu mana yang kuat dan mana yang perlu dicek lagi.",
-    preview: "agents",
-  },
-];
+const OB_SLIDES: Record<Language, { title: string; sub: string; label: string; preview: OnboardingPreview }[]> = {
+  id: [
+    {
+      label: "Langkah 1",
+      title: "Mulai dari ide bisnis mentah",
+      sub: "Tulis dengan bahasa biasa. Consultin menyusun brief berisi industri, lokasi, target pembeli, tujuan, dan hal yang masih perlu dicek.",
+      preview: "brief",
+    },
+    {
+      label: "Langkah 2",
+      title: "Lengkapi informasi sebelum diproses",
+      sub: "Jika data kurang, Consultin bertanya singkat dulu. Analisis tidak berjalan sampai brief kamu tinjau.",
+      preview: "followup",
+    },
+    {
+      label: "Langkah 3",
+      title: "Tim analis menandai bukti dan asumsi",
+      sub: "Setiap bagian laporan menunjukkan sumber, risiko, asumsi, dan rekomendasi agar kamu tahu mana yang kuat dan mana yang perlu dicek lagi.",
+      preview: "agents",
+    },
+  ],
+  en: [
+    {
+      label: "Step 1",
+      title: "Start from a raw business idea",
+      sub: "Write it in plain language. Consultin builds a brief covering industry, location, target customers, goals, and what still needs checking.",
+      preview: "brief",
+    },
+    {
+      label: "Step 2",
+      title: "Fill in the gaps before it's processed",
+      sub: "If data is missing, Consultin asks a short follow-up first. Analysis doesn't run until you've reviewed the brief.",
+      preview: "followup",
+    },
+    {
+      label: "Step 3",
+      title: "The analyst team flags evidence and assumptions",
+      sub: "Every section of the report shows its source, risk, assumptions, and recommendations so you know what's solid and what still needs checking.",
+      preview: "agents",
+    },
+  ],
+};
 
 function IllustrationFrame({ src, alt, className, imgClassName = "object-cover" }: { src: string; alt: string; className?: string; imgClassName?: string }) {
   return (
@@ -734,19 +877,24 @@ function ReportSkeleton({ language }: { language: Language }) {
   );
 }
 
-function BriefPreview() {
-  const briefItems = [
+function BriefPreview({ language }: { language: Language }) {
+  const briefItems = language === "id" ? [
     ["Industri", "F&B"],
     ["Lokasi", "Dago"],
     ["Target", "Mahasiswa"],
     ["Perlu dicek", "Kompetitor"],
+  ] : [
+    ["Industry", "F&B"],
+    ["Location", "Dago"],
+    ["Target", "Students"],
+    ["To verify", "Competitors"],
   ];
 
   return (
     <div className="flex h-full flex-col gap-4">
       <div className="rounded-2xl border border-border bg-background p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground font-mono">Input pengguna</p>
-        <p className="mt-2 text-sm leading-relaxed text-foreground font-['Plus_Jakarta_Sans']">Mau buka kafe kecil di Dago buat mahasiswa dan pekerja remote.</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground font-mono">{language === "id" ? "Input pengguna" : "User input"}</p>
+        <p className="mt-2 text-sm leading-relaxed text-foreground font-['Plus_Jakarta_Sans']">{language === "id" ? "Mau buka kafe kecil di Dago buat mahasiswa dan pekerja remote." : "Want to open a small cafe in Dago for students and remote workers."}</p>
       </div>
       <div className="grid grid-cols-2 gap-3">
         {briefItems.map(([label, value]) => (
@@ -757,19 +905,31 @@ function BriefPreview() {
         ))}
       </div>
       <div className="mt-auto rounded-2xl border border-primary/25 bg-primary/10 p-4">
-        <p className="text-[12px] font-semibold text-primary font-['Plus_Jakarta_Sans']">Brief awal siap ditinjau</p>
-        <p className="mt-1 text-xs leading-relaxed text-primary/80 font-['Plus_Jakarta_Sans']">Consultin menandai bagian yang sudah jelas dan bagian yang perlu ditanya lagi.</p>
+        <p className="text-[12px] font-semibold text-primary font-['Plus_Jakarta_Sans']">{language === "id" ? "Brief awal siap ditinjau" : "Initial brief ready for review"}</p>
+        <p className="mt-1 text-xs leading-relaxed text-primary/80 font-['Plus_Jakarta_Sans']">{language === "id" ? "Consultin menandai bagian yang sudah jelas dan bagian yang perlu ditanya lagi." : "Consultin marks the parts that are clear and the parts that still need clarifying."}</p>
       </div>
     </div>
   );
 }
 
-function FollowUpPreview() {
+function FollowUpPreview({ language }: { language: Language }) {
+  const completeness = language === "id" ? [
+    ["Modal", "Lengkap"],
+    ["Target", "Lengkap"],
+    ["Lokasi", "Lengkap"],
+    ["Waktu buka", "Perlu jawaban"],
+  ] : [
+    ["Budget", "Complete"],
+    ["Target", "Complete"],
+    ["Location", "Complete"],
+    ["Opening hours", "Needs answer"],
+  ];
+
   return (
     <div className="flex h-full flex-col gap-3">
       <div className="rounded-2xl border border-border bg-background p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground font-mono">Pertanyaan lanjutan</p>
-        <p className="mt-2 text-sm font-semibold text-foreground font-['Plus_Jakarta_Sans']">Berapa rentang modal awal yang ingin dianalisis?</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground font-mono">{language === "id" ? "Pertanyaan lanjutan" : "Follow-up question"}</p>
+        <p className="mt-2 text-sm font-semibold text-foreground font-['Plus_Jakarta_Sans']">{language === "id" ? "Berapa rentang modal awal yang ingin dianalisis?" : "What initial budget range do you want analyzed?"}</p>
       </div>
       <div className="grid gap-2 sm:grid-cols-3">
         {["< Rp50jt", "Rp50-150jt", "> Rp150jt"].map((item, i) => (
@@ -779,19 +939,14 @@ function FollowUpPreview() {
       <div className="rounded-2xl border border-border bg-card p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-foreground font-['Plus_Jakarta_Sans']">Kelengkapan brief</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground font-['Plus_Jakarta_Sans']">4 dari 5 info utama sudah jelas. Waktu pembukaan masih perlu dijawab.</p>
+            <p className="text-sm font-semibold text-foreground font-['Plus_Jakarta_Sans']">{language === "id" ? "Kelengkapan brief" : "Brief completeness"}</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground font-['Plus_Jakarta_Sans']">{language === "id" ? "4 dari 5 info utama sudah jelas. Waktu pembukaan masih perlu dijawab." : "4 of 5 key details are clear. Opening hours still needs an answer."}</p>
           </div>
           <p className="shrink-0 text-sm font-bold text-success font-mono">4/5</p>
         </div>
       </div>
       <div className="mt-auto grid grid-cols-2 gap-2">
-        {[
-          ["Modal", "Lengkap"],
-          ["Target", "Lengkap"],
-          ["Lokasi", "Lengkap"],
-          ["Waktu buka", "Perlu jawaban"],
-        ].map(([label, value]) => (
+        {completeness.map(([label, value]) => (
           <div key={label} className="rounded-xl border border-border bg-background px-3 py-2">
             <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-mono">{label}</p>
             <p className="mt-1 text-xs font-semibold text-foreground font-['Plus_Jakarta_Sans']">{value}</p>
@@ -802,12 +957,17 @@ function FollowUpPreview() {
   );
 }
 
-function AgentPipelinePreview() {
-  const agents = [
+function AgentPipelinePreview({ language }: { language: Language }) {
+  const agents = language === "id" ? [
     ["Bukti", "Sumber akan ditampilkan di laporan", "Dapat dicek"],
     ["Kompetitor", "Brand sekitar dipetakan per lokasi", "Terbuka"],
     ["Risiko", "Asumsi dan data lemah ditandai", "Ditandai"],
     ["Rekomendasi", "Prioritas disusun dari bukti terkuat", "Siap tinjau"],
+  ] : [
+    ["Evidence", "Sources will be shown in the report", "Verifiable"],
+    ["Competitors", "Nearby brands mapped by location", "Open"],
+    ["Risk", "Weak assumptions and data flagged", "Flagged"],
+    ["Recommendations", "Priorities built from strongest evidence", "Ready to review"],
   ];
 
   return (
@@ -830,12 +990,12 @@ function AgentPipelinePreview() {
   );
 }
 
-function OnboardingPreview({ type }: { type: OnboardingPreview }) {
+function OnboardingPreview({ type, language }: { type: OnboardingPreview; language: Language }) {
   if (type === "brief") {
     return (
       <div className="flex h-full flex-col gap-5">
-        <IllustrationFrame src={OnboardingBriefImg} alt="Analis menyusun brief bisnis dari catatan pengguna" className="h-52 sm:h-60" />
-        <BriefPreview />
+        <IllustrationFrame src={OnboardingBriefImg} alt={language === "id" ? "Analis menyusun brief bisnis dari catatan pengguna" : "Analyst composing a business brief from user notes"} className="h-52 sm:h-60" />
+        <BriefPreview language={language} />
       </div>
     );
   }
@@ -843,24 +1003,26 @@ function OnboardingPreview({ type }: { type: OnboardingPreview }) {
   if (type === "followup") {
     return (
       <div className="flex h-full flex-col gap-5">
-        <IllustrationFrame src={OnboardingEvidenceImg} alt="Peta bukti dan pertanyaan lanjutan sebelum analisis berjalan" className="h-52 sm:h-60" />
-        <FollowUpPreview />
+        <IllustrationFrame src={OnboardingEvidenceImg} alt={language === "id" ? "Peta bukti dan pertanyaan lanjutan sebelum analisis berjalan" : "Evidence map and follow-up question before analysis runs"} className="h-52 sm:h-60" />
+        <FollowUpPreview language={language} />
       </div>
     );
   }
 
   return (
     <div className="flex h-full flex-col gap-5">
-      <IllustrationFrame src={OnboardingWorkflowImg} alt="Ruang kerja analis dengan alur bukti, risiko, dan rekomendasi" className="h-52 sm:h-60" />
-      <AgentPipelinePreview />
+      <IllustrationFrame src={OnboardingWorkflowImg} alt={language === "id" ? "Ruang kerja analis dengan alur bukti, risiko, dan rekomendasi" : "Analyst workspace with evidence, risk, and recommendation flow"} className="h-52 sm:h-60" />
+      <AgentPipelinePreview language={language} />
     </div>
   );
 }
 
-function OnboardingView({ onFinish }: { onFinish: () => void }) {
+function OnboardingView({ onFinish, language }: { onFinish: () => void; language: Language }) {
+  const copy = UI_COPY[language];
+  const slides = OB_SLIDES[language];
   const [slide, setSlide] = useState(0);
-  const s = OB_SLIDES[slide];
-  const isLast = slide === OB_SLIDES.length - 1;
+  const s = slides[slide];
+  const isLast = slide === slides.length - 1;
 
   const next = () => {
     if (isLast) onFinish();
@@ -875,7 +1037,7 @@ function OnboardingView({ onFinish }: { onFinish: () => void }) {
             <ImageWithFallback src={CLogoImg} alt="Consultin" className="size-7 object-contain" />
             <span className="text-sm font-bold tracking-tight font-['Plus_Jakarta_Sans']">Consultin</span>
           </div>
-          <button onClick={onFinish} className="min-h-11 rounded-xl px-4 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring font-['Plus_Jakarta_Sans']">Lewati onboarding</button>
+          <button onClick={onFinish} className="min-h-11 rounded-xl px-4 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring font-['Plus_Jakarta_Sans']">{copy.skipOnboarding}</button>
         </header>
 
         <main className="grid flex-1 items-center gap-8 py-6 lg:grid-cols-[0.9fr_1.1fr] lg:gap-12">
@@ -886,13 +1048,13 @@ function OnboardingView({ onFinish }: { onFinish: () => void }) {
               <p className="max-w-xl text-base leading-relaxed text-muted-foreground font-['Plus_Jakarta_Sans']">{s.sub}</p>
             </div>
 
-            <div className="rounded-[1.4rem] border border-border bg-card/85 p-2 shadow-[0_16px_44px_rgba(12,24,40,0.05)]" aria-label="Langkah onboarding">
-              {OB_SLIDES.map((item, i) => (
+            <div className="rounded-[1.4rem] border border-border bg-card/85 p-2 shadow-[0_16px_44px_rgba(12,24,40,0.05)]" aria-label={copy.onboardingStepTitle}>
+              {slides.map((item, i) => (
                 <button
                   key={item.label}
                   onClick={() => setSlide(i)}
                   aria-current={i === slide ? "step" : undefined}
-                  aria-label={`Langkah ${i + 1} dari ${OB_SLIDES.length}: ${item.title}`}
+                  aria-label={`${copy.step} ${i + 1} ${language === "id" ? "dari" : "of"} ${slides.length}: ${item.title}`}
                   className={cn("group flex min-h-12 w-full items-center gap-3 rounded-[1.05rem] px-3 py-2.5 text-left transition-[background,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", i === slide ? "bg-background shadow-[inset_0_0_0_1px_rgba(42,116,196,0.18),0_10px_24px_rgba(12,24,40,0.06)]" : "hover:bg-muted/70")}
                 >
                   <span className={cn("flex size-8 items-center justify-center rounded-xl border text-[11px] font-bold font-mono transition-colors", i === slide ? "border-primary/30 bg-primary text-primary-foreground" : "border-border bg-background text-muted-foreground group-hover:text-foreground")}>{i + 1}</span>
@@ -906,12 +1068,12 @@ function OnboardingView({ onFinish }: { onFinish: () => void }) {
 
             <div className="flex flex-col gap-2 pb-[max(1rem,env(safe-area-inset-bottom))]">
               <div className="flex items-center gap-3">
-                <button onClick={() => setSlide(Math.max(0, slide - 1))} disabled={slide === 0} className="min-h-11 rounded-xl border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring font-['Plus_Jakarta_Sans']">Kembali</button>
+                <button onClick={() => setSlide(Math.max(0, slide - 1))} disabled={slide === 0} className="min-h-11 rounded-xl border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring font-['Plus_Jakarta_Sans']">{copy.back}</button>
                 <button onClick={next} className="min-h-11 rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 font-['Plus_Jakarta_Sans']">
-                  {isLast ? "Mulai isi brief" : "Lanjut"}
+                  {isLast ? copy.startBrief : copy.next}
                 </button>
               </div>
-              {isLast && <p className="text-xs leading-relaxed text-muted-foreground font-['Plus_Jakarta_Sans']">Analisis berjalan setelah brief kamu tinjau dan lengkapi.</p>}
+              {isLast && <p className="text-xs leading-relaxed text-muted-foreground font-['Plus_Jakarta_Sans']">{copy.onboardingFooterText}</p>}
             </div>
           </section>
 
@@ -921,12 +1083,12 @@ function OnboardingView({ onFinish }: { onFinish: () => void }) {
               <div className="relative min-h-[430px] rounded-[1.5rem] border border-primary/10 bg-background/88 p-4 sm:min-h-[480px] sm:p-5 lg:min-h-[560px]">
                 <div className="mb-4 flex items-center justify-between gap-3 border-b border-border pb-3">
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground font-mono">Pratinjau alur</p>
-                    <p className="mt-1 text-sm font-bold text-foreground font-['Plus_Jakarta_Sans']">Ruang analisis</p>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground font-mono">{copy.onboardingPreviewTitle}</p>
+                    <p className="mt-1 text-sm font-bold text-foreground font-['Plus_Jakarta_Sans']">{copy.onboardingWorkspace}</p>
                   </div>
-                  <span className="rounded-full border border-success/25 bg-success/10 px-2.5 py-1 text-[10px] font-bold text-success font-mono">Siap ditinjau</span>
+                  <span className="rounded-full border border-success/25 bg-success/10 px-2.5 py-1 text-[10px] font-bold text-success font-mono">{copy.onboardingReadyToReview}</span>
                 </div>
-                <OnboardingPreview type={s.preview} />
+                <OnboardingPreview type={s.preview} language={language} />
               </div>
             </div>
           </section>
@@ -1442,9 +1604,9 @@ function BriefReviewView({ query, onConfirm, onBack, language }: { query: string
       <div className="mx-auto grid w-full max-w-5xl gap-6 px-6 py-8 md:px-8 lg:grid-cols-[1.08fr_0.92fr]">
         <section className="rounded-[1.75rem] bg-card p-5 ring-1 ring-border shadow-[0_18px_45px_rgba(12,24,40,0.05)]">
           <div className="mb-5">
-            <p className="text-xs font-semibold text-primary font-['Plus_Jakarta_Sans']">Brief pengguna</p>
-            <h1 className="mt-2 text-2xl font-bold leading-tight tracking-tight text-foreground font-['Plus_Jakarta_Sans'] md:text-3xl">Pastikan konteksnya benar dulu.</h1>
-            <p className="mt-3 max-w-[65ch] text-sm leading-relaxed text-muted-foreground font-['Plus_Jakarta_Sans']">{query || REPORT_DATA.topic}</p>
+            <p className="text-xs font-semibold text-primary font-['Plus_Jakarta_Sans']">{copy.reviewUserBrief}</p>
+            <h1 className="mt-2 text-2xl font-bold leading-tight tracking-tight text-foreground font-['Plus_Jakarta_Sans'] md:text-3xl">{copy.reviewEnsureContext}</h1>
+            <p className="mt-3 max-w-[65ch] text-sm leading-relaxed text-muted-foreground font-['Plus_Jakarta_Sans']">{query || REPORT_DATA[language].topic}</p>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -1542,7 +1704,7 @@ function ProcessingView({ query, onComplete, language }: { query: string; onComp
         {/* Topic */}
         <div className="bg-card rounded-xl border border-border p-4 mb-8">
           <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-['Plus_Jakarta_Sans'] mb-1">{language === "id" ? "Topik Analisis" : "Analysis Topic"}</p>
-          <p className="text-[15px] font-semibold font-['Plus_Jakarta_Sans'] text-foreground">{query || REPORT_DATA.topic}</p>
+          <p className="text-[15px] font-semibold font-['Plus_Jakarta_Sans'] text-foreground">{query || REPORT_DATA[language].topic}</p>
         </div>
 
         {/* Progress */}
@@ -1623,17 +1785,19 @@ function ProcessingView({ query, onComplete, language }: { query: string; onComp
 }
 
 // ─── Report (two-panel desktop layout) ───────────────────────────────────────
-function ReportView({ query, onBack, onNavigate }: {
-  query: string; onBack: () => void; onNavigate: (s: Screen) => void;
+function ReportView({ query, onBack, onNavigate, language }: {
+  query: string; onBack: () => void; onNavigate: (s: Screen) => void; language: Language;
 }) {
+  const copy = UI_COPY[language];
   const [openSwot, setOpenSwot] = useState(true);
   const [expandedClaims, setExpandedClaims] = useState<number[]>([]);
-  const r = REPORT_DATA;
+  const r = REPORT_DATA[language];
+  const dataPoints = language === "id" ? "2.847" : "2,847";
 
   const sentimentData = [
-    { name: "Positif", value: r.sentimentPos, color: "#2F735F" },
-    { name: "Netral", value: r.sentimentNeu, color: "#6C6254" },
-    { name: "Negatif", value: r.sentimentNeg, color: "#A23F2F" },
+    { name: SENTIMENT_LABEL[language].positive, value: r.sentimentPos, color: "#2F735F" },
+    { name: SENTIMENT_LABEL[language].neutral, value: r.sentimentNeu, color: "#6C6254" },
+    { name: SENTIMENT_LABEL[language].negative, value: r.sentimentNeg, color: "#A23F2F" },
   ];
 
   return (
@@ -1645,21 +1809,21 @@ function ReportView({ query, onBack, onNavigate }: {
             <ChevronLeft size={16} />
           </button>
           <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-['Plus_Jakarta_Sans']">Laporan Analisis</p>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-['Plus_Jakarta_Sans']">{copy.reportTitle}</p>
             <p className="text-sm font-semibold font-['Plus_Jakarta_Sans'] text-foreground truncate max-w-xs md:max-w-lg">{query || r.topic}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button onClick={() => onNavigate("fullreport")} className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-border text-[13px] font-['Plus_Jakarta_Sans'] font-medium text-foreground hover:bg-muted transition-all">
-            <FileText size={14} /> Full Report
+            <FileText size={14} /> {copy.fullReport}
           </button>
           <button onClick={() => onNavigate("slidedeck")} className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#0D1829] text-white text-[13px] font-['Plus_Jakarta_Sans'] font-medium hover:bg-[#1a2d4a] transition-all">
-            <Layers size={14} /> Slide Deck
+            <Layers size={14} /> {copy.slideDeck}
           </button>
           <button onClick={() => onNavigate("home")} className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-border text-[13px] font-['Plus_Jakarta_Sans'] font-medium text-foreground hover:bg-muted transition-all">
-            <FileText size={14} /> Baru
+            <FileText size={14} /> {copy.newAnalysis}
           </button>
-          <button aria-label="Unduh ringkasan laporan" className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <button aria-label={language === "id" ? "Unduh ringkasan laporan" : "Download report summary"} className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <Download size={15} />
           </button>
         </div>
@@ -1675,15 +1839,15 @@ function ReportView({ query, onBack, onNavigate }: {
                 <span className="text-xl font-bold font-mono">{r.overallScore}</span>
               </div>
               <div className="min-w-0 flex-1">
-                <p className="mb-0.5 text-[11px] uppercase tracking-wide text-[#D7B46A] font-['Plus_Jakarta_Sans']">Skor kelayakan pasar</p>
+                <p className="mb-0.5 text-[11px] uppercase tracking-wide text-[#D7B46A] font-['Plus_Jakarta_Sans']">{copy.scoreLabel}</p>
                 <p className="text-lg font-semibold leading-snug font-['Plus_Jakarta_Sans']">{query || r.topic}</p>
-                <p className="mt-0.5 text-[12px] text-white/62 font-['Plus_Jakarta_Sans']">{r.date} · 4 agen · 2.847 data points</p>
+                <p className="mt-0.5 text-[12px] text-white/62 font-['Plus_Jakarta_Sans']">{r.date} · 4 {copy.reportMetaAgents} · {dataPoints} {copy.reportDataPoints}</p>
                 <span className="mt-3 inline-flex rounded-full border border-[#2F735F]/35 bg-[#2F735F]/20 px-2.5 py-1 text-[11px] font-semibold text-[#A8D7C4] font-['Plus_Jakarta_Sans']">
-                  Sentimen {r.sentimentPos}% Positif
+                  {language === "id" ? "Sentimen" : "Sentiment"} {r.sentimentPos}% {SENTIMENT_LABEL[language].positive}
                 </span>
               </div>
             </div>
-            <IllustrationFrame src={NanoReportImg} alt="Dossier laporan analisis berisi skor, sumber, dan rekomendasi" className="hidden h-28 border-white/10 bg-white/[0.04] p-1 ring-white/10 sm:block" imgClassName="object-cover" />
+            <IllustrationFrame src={NanoReportImg} alt={language === "id" ? "Dossier laporan analisis berisi skor, sumber, dan rekomendasi" : "Analysis report dossier with scores, sources, and recommendations"} className="hidden h-28 border-white/10 bg-white/[0.04] p-1 ring-white/10 sm:block" imgClassName="object-cover" />
           </div>
 
           {/* Executive summary */}
@@ -1691,28 +1855,28 @@ function ReportView({ query, onBack, onNavigate }: {
             <div className="mb-3 flex items-start justify-between gap-3">
               <div className="flex items-center gap-2">
                 <span className="flex size-8 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary"><FileText size={15} /></span>
-                <h3 className="text-[13px] font-bold text-foreground font-['Plus_Jakarta_Sans']">Ringkasan eksekutif</h3>
+                <h3 className="text-[13px] font-bold text-foreground font-['Plus_Jakarta_Sans']">{copy.summaryTitle}</h3>
               </div>
-              <span className="rounded-full border border-success/25 bg-success/10 px-2.5 py-1 text-[11px] font-semibold text-success font-mono">5 klaim · 86%</span>
+              <span className="rounded-full border border-success/25 bg-success/10 px-2.5 py-1 text-[11px] font-semibold text-success font-mono">{language === "id" ? "5 klaim · 86%" : "5 claims · 86%"}</span>
             </div>
             <p className="text-[14px] leading-relaxed text-foreground/82 font-['Plus_Jakarta_Sans']">
-              Pasar kafe spesialti di area Dago Bandung menunjukkan momentum pertumbuhan yang kuat dengan peningkatan 34% YoY, didorong oleh demografi mahasiswa dan profesional muda. Namun, masuknya jaringan nasional menciptakan tekanan kompetitif yang signifikan. Rekomendasi utama: fokus pada diferensiasi brand, optimasi digital presence, dan program loyalitas dalam 90 hari pertama.
+              {copy.summaryDesc}
             </p>
           </div>
 
           {/* Sentiment trend */}
           <div className="bg-card rounded-xl border border-border p-5">
             <h3 className="text-[13px] font-bold font-['Plus_Jakarta_Sans'] text-foreground uppercase tracking-wide mb-4 flex items-center gap-2">
-              <TrendingUp size={15} className="text-primary" /> Tren Sentimen (6 Bulan)
+              <TrendingUp size={15} className="text-primary" /> {copy.sentimentTrendTitle}
             </h3>
-            <p className="sr-only">Tren sentimen enam bulan: sentimen positif naik dari 62% pada Januari menjadi 74% pada Juni, sementara sentimen negatif turun dari 18% menjadi 10%.</p>
+            <p className="sr-only">{language === "id" ? "Tren sentimen enam bulan: sentimen positif naik dari 62% pada Januari menjadi 74% pada Juni, sementara sentimen negatif turun dari 18% menjadi 10%." : "Six-month sentiment trend: positive sentiment rose from 62% in January to 74% in June, while negative sentiment fell from 18% to 10%."}</p>
             <ResponsiveContainer width="100%" height={180}>
               <LineChart data={r.sentimentTrend}>
                 <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: "JetBrains Mono" }} />
                 <YAxis tick={{ fontSize: 11, fontFamily: "JetBrains Mono" }} domain={[0, 100]} />
                 <Tooltip contentStyle={{ fontSize: 12, fontFamily: "Manrope", borderRadius: 8, border: "1px solid #e2e8f2" }} />
-                <Line type="monotone" dataKey="pos" stroke="var(--success)" strokeWidth={2} dot={{ r: 3 }} name="Positif %" />
-                <Line type="monotone" dataKey="neg" stroke="var(--destructive)" strokeWidth={2} dot={{ r: 3 }} name="Negatif %" />
+                <Line type="monotone" dataKey="pos" stroke="var(--success)" strokeWidth={2} dot={{ r: 3 }} name={`${SENTIMENT_LABEL[language].positive} %`} />
+                <Line type="monotone" dataKey="neg" stroke="var(--destructive)" strokeWidth={2} dot={{ r: 3 }} name={`${SENTIMENT_LABEL[language].negative} %`} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -1722,17 +1886,17 @@ function ReportView({ query, onBack, onNavigate }: {
             <button onClick={() => setOpenSwot(!openSwot)}
               className="w-full px-5 py-3.5 flex items-center justify-between hover:bg-muted/30 transition-colors">
               <h3 className="text-[13px] font-bold font-['Plus_Jakarta_Sans'] text-foreground uppercase tracking-wide flex items-center gap-2">
-                <Target size={15} className="text-primary" /> Analisis SWOT
+                <Target size={15} className="text-primary" /> {copy.swotTitle}
               </h3>
               <ChevronDown size={15} className={cn("text-muted-foreground transition-transform", openSwot && "rotate-180")} />
             </button>
             {openSwot && (
               <div className="grid grid-cols-1 sm:grid-cols-2 border-t border-border">
                 {[
-                  { label: "Strengths", items: r.swot.strengths, color: "emerald", bg: "bg-emerald-50 dark:bg-emerald-950/20" },
-                  { label: "Weaknesses", items: r.swot.weaknesses, color: "red", bg: "bg-red-50 dark:bg-red-950/20" },
-                  { label: "Opportunities", items: r.swot.opportunities, color: "blue", bg: "bg-blue-50 dark:bg-blue-950/20" },
-                  { label: "Threats", items: r.swot.threats, color: "amber", bg: "bg-amber-50 dark:bg-amber-950/20" },
+                  { label: copy.strengths, items: r.swot.strengths, color: "emerald", bg: "bg-emerald-50 dark:bg-emerald-950/20" },
+                  { label: copy.weaknesses, items: r.swot.weaknesses, color: "red", bg: "bg-red-50 dark:bg-red-950/20" },
+                  { label: copy.opportunities, items: r.swot.opportunities, color: "blue", bg: "bg-blue-50 dark:bg-blue-950/20" },
+                  { label: copy.threats, items: r.swot.threats, color: "amber", bg: "bg-amber-50 dark:bg-amber-950/20" },
                 ].map(({ label, items, bg }) => (
                   <div key={label} className={cn("p-4 border-border", "border-b sm:even:border-l last:border-b-0 sm:last:border-b-0", bg)}>
                     <p className="text-[11px] font-bold font-['Plus_Jakarta_Sans'] uppercase tracking-wide text-muted-foreground mb-2">{label}</p>
@@ -1752,7 +1916,7 @@ function ReportView({ query, onBack, onNavigate }: {
           {/* Strategic priorities */}
           <div className="rounded-[1.4rem] border border-border bg-card p-5 shadow-[0_16px_44px_rgba(12,24,40,0.045)]">
             <h3 className="mb-4 flex items-center gap-2 text-[13px] font-bold text-foreground font-['Plus_Jakarta_Sans']">
-              <span className="flex size-8 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary"><Target size={15} /></span> Prioritas strategis
+              <span className="flex size-8 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary"><Target size={15} /></span> {copy.strategicPriorities}
             </h3>
             <div className="space-y-2.5">
               {r.priorities.map((p) => (
@@ -1761,8 +1925,8 @@ function ReportView({ query, onBack, onNavigate }: {
                   <p className="text-[13px] font-medium text-foreground font-['Plus_Jakarta_Sans']">{p.title}</p>
                   <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                     <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-semibold font-['Plus_Jakarta_Sans']",
-                      p.impact === "Tinggi" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning")}>
-                      {p.impact} impact
+                      p.impact === "high" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning")}>
+                      {LEVEL_LABEL[language][p.impact]} {copy.impactSuffix}
                     </span>
                     <span className="rounded-full border border-border bg-card px-2.5 py-1 text-[11px] text-muted-foreground font-mono">{p.timeframe}</span>
                   </div>
@@ -1774,10 +1938,10 @@ function ReportView({ query, onBack, onNavigate }: {
           {/* Mobile action row */}
           <div className="sm:hidden grid grid-cols-2 gap-3">
             <button onClick={() => onNavigate("fullreport")} className="py-3 rounded-xl border border-border text-[13px] font-['Plus_Jakarta_Sans'] font-semibold text-foreground flex items-center justify-center gap-2 hover:bg-muted transition-all">
-              <FileText size={15} /> Full Report
+              <FileText size={15} /> {copy.fullReport}
             </button>
             <button onClick={() => onNavigate("slidedeck")} className="py-3 rounded-xl bg-[#0D1829] text-white text-[13px] font-['Plus_Jakarta_Sans'] font-semibold flex items-center justify-center gap-2 hover:bg-[#1a2d4a] transition-all">
-              <Layers size={15} /> Slide Deck
+              <Layers size={15} /> {copy.slideDeck}
             </button>
           </div>
         </div>
@@ -1787,8 +1951,8 @@ function ReportView({ query, onBack, onNavigate }: {
           <div className="p-5 space-y-4">
             {/* Sentiment donut */}
             <div className="bg-card rounded-xl border border-border p-4">
-              <p className="text-[11px] font-bold font-['Plus_Jakarta_Sans'] uppercase tracking-wide text-muted-foreground mb-3">Distribusi Sentimen</p>
-              <p className="sr-only">Distribusi sentimen: {r.sentimentPos}% positif, {r.sentimentNeu}% netral, {r.sentimentNeg}% negatif.</p>
+              <p className="text-[11px] font-bold font-['Plus_Jakarta_Sans'] uppercase tracking-wide text-muted-foreground mb-3">{copy.sentimentDistribution}</p>
+              <p className="sr-only">{language === "id" ? `Distribusi sentimen: ${r.sentimentPos}% positif, ${r.sentimentNeu}% netral, ${r.sentimentNeg}% negatif.` : `Sentiment distribution: ${r.sentimentPos}% positive, ${r.sentimentNeu}% neutral, ${r.sentimentNeg}% negative.`}</p>
               <div className="flex items-center gap-3">
                 <PieChart width={90} height={90}>
                     <Pie data={sentimentData} cx="50%" cy="50%" innerRadius={27} outerRadius={42} dataKey="value" startAngle={90} endAngle={-270}>
@@ -1809,13 +1973,13 @@ function ReportView({ query, onBack, onNavigate }: {
 
             {/* Key metrics */}
             <div className="bg-card rounded-xl border border-border p-4">
-              <p className="text-[11px] font-bold font-['Plus_Jakarta_Sans'] uppercase tracking-wide text-muted-foreground mb-3">Metrik Kunci</p>
+              <p className="text-[11px] font-bold font-['Plus_Jakarta_Sans'] uppercase tracking-wide text-muted-foreground mb-3">{copy.keyMetrics}</p>
               <div className="grid grid-cols-2 gap-2.5">
                 {[
-                  { label: "Skor kelayakan", val: `${r.overallScore}/100`, icon: CircleDot },
-                  { label: "Kompetitor", val: "5 aktif", icon: Users },
-                  { label: "Data Points", val: "2.847", icon: Activity },
-                  { label: "Keyakinan", val: "86%", icon: Shield },
+                  { label: copy.marketViabilityScore, val: `${r.overallScore}/100`, icon: CircleDot },
+                  { label: copy.competitor, val: copy.activeCompetitorsCount, icon: Users },
+                  { label: "Data Points", val: dataPoints, icon: Activity },
+                  { label: copy.confidence, val: "86%", icon: Shield },
                 ].map(({ label, val, icon: Icon }) => (
                   <div key={label} className="rounded-xl border border-border bg-background p-3">
                     <div className="mb-2 flex size-7 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
@@ -1830,7 +1994,7 @@ function ReportView({ query, onBack, onNavigate }: {
 
             {/* Confidence */}
             <div className="bg-card rounded-xl border border-border p-4">
-              <p className="text-[11px] font-bold font-['Plus_Jakarta_Sans'] uppercase tracking-wide text-muted-foreground mb-3">Tingkat Kepercayaan Klaim</p>
+              <p className="text-[11px] font-bold font-['Plus_Jakarta_Sans'] uppercase tracking-wide text-muted-foreground mb-3">{copy.claimConfidenceLevel}</p>
               <div className="space-y-2.5">
                 {r.claims.slice(0, 3).map((c, i) => (
                   <div key={i}>
@@ -1849,13 +2013,13 @@ function ReportView({ query, onBack, onNavigate }: {
             {/* Actions */}
             <div className="space-y-2">
               <button onClick={() => onNavigate("fullreport")} className="w-full py-3 rounded-xl border border-border text-[13px] font-['Plus_Jakarta_Sans'] font-semibold text-foreground hover:bg-muted transition-all flex items-center justify-center gap-2">
-                <FileText size={15} /> Lihat Full Report
+                <FileText size={15} /> {copy.viewFullReportShort}
               </button>
               <button onClick={() => onNavigate("slidedeck")} className="w-full py-3 rounded-xl bg-[#0D1829] text-white text-[13px] font-['Plus_Jakarta_Sans'] font-semibold hover:bg-[#1a2d4a] transition-all flex items-center justify-center gap-2">
-                <Layers size={15} /> Buat Slide Deck
+                <Layers size={15} /> {copy.createSlideDeckShort}
               </button>
               <button onClick={() => onNavigate("home")} className="w-full py-3 rounded-xl border border-border text-[13px] font-['Plus_Jakarta_Sans'] font-medium text-muted-foreground hover:bg-muted transition-all flex items-center justify-center gap-2">
-<FileText size={14} /> Analisis Baru
+<FileText size={14} /> {copy.newAnalysisFull}
               </button>
             </div>
           </div>
@@ -1866,23 +2030,33 @@ function ReportView({ query, onBack, onNavigate }: {
 }
 
 // ─── Full Report ──────────────────────────────────────────────────────────────
-const FR_SECTIONS = [
-  "Verdict eksekutif", "Konteks pasar", "Sinyal pelanggan dan sentimen",
-  "Peta kompetitif", "Analisis SWOT", "Prioritas strategis 30/60/90",
-  "Risiko dan asumsi", "Kepercayaan data", "Metodologi dan sumber",
-];
+const FR_SECTIONS: Record<Language, string[]> = {
+  id: [
+    "Verdict eksekutif", "Konteks pasar", "Sinyal pelanggan dan sentimen",
+    "Peta kompetitif", "Analisis SWOT", "Prioritas strategis 30/60/90",
+    "Risiko dan asumsi", "Kepercayaan data", "Metodologi dan sumber",
+  ],
+  en: [
+    "Executive verdict", "Market context", "Customer signals and sentiment",
+    "Competitive map", "SWOT analysis", "30/60/90 strategic priorities",
+    "Risks and assumptions", "Data confidence", "Methodology and sources",
+  ],
+};
 
-function FullReportView({ query, onBack, onSlideDeck }: { query: string; onBack: () => void; onSlideDeck: () => void }) {
+function FullReportView({ query, onBack, onSlideDeck, language }: { query: string; onBack: () => void; onSlideDeck: () => void; language: Language }) {
+  const copy = UI_COPY[language];
   const [open, setOpen] = useState<number[]>([0, 1]);
   const [activeSection, setActiveSection] = useState(0);
-  const r = REPORT_DATA;
+  const r = REPORT_DATA[language];
+  const sections = FR_SECTIONS[language];
+  const dataPoints = language === "id" ? "2.847" : "2,847";
 
   const toggle = (i: number) => setOpen(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i]);
 
   const sentPie = [
-    { name: "Positif", value: r.sentimentPos, color: "#2F735F" },
-    { name: "Netral", value: r.sentimentNeu, color: "#6C6254" },
-    { name: "Negatif", value: r.sentimentNeg, color: "#A23F2F" },
+    { name: SENTIMENT_LABEL[language].positive, value: r.sentimentPos, color: "#2F735F" },
+    { name: SENTIMENT_LABEL[language].neutral, value: r.sentimentNeu, color: "#6C6254" },
+    { name: SENTIMENT_LABEL[language].negative, value: r.sentimentNeg, color: "#A23F2F" },
   ];
 
   return (
@@ -1893,15 +2067,15 @@ function FullReportView({ query, onBack, onSlideDeck }: { query: string; onBack:
           <ChevronLeft size={16} />
         </button>
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] uppercase tracking-widest text-white/40 font-['Plus_Jakarta_Sans']">Full Report</p>
+          <p className="text-[10px] uppercase tracking-widest text-white/40 font-['Plus_Jakarta_Sans']">{copy.fullReport}</p>
           <p className="text-sm font-semibold font-['Plus_Jakarta_Sans'] text-white/90 truncate">{query || r.topic}</p>
         </div>
         <div className="flex gap-2">
           <button onClick={onSlideDeck} className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/10 text-white text-[13px] font-['Plus_Jakarta_Sans'] font-medium hover:bg-white/20 transition-all">
-            <Layers size={14} /> Slide Deck
+            <Layers size={14} /> {copy.slideDeck}
           </button>
           <button className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary text-primary-foreground text-[13px] font-['Plus_Jakarta_Sans'] font-medium hover:bg-primary transition-all">
-            <Download size={14} /> Unduh PDF
+            <Download size={14} /> {copy.downloadPdf}
           </button>
         </div>
       </div>
@@ -1910,9 +2084,9 @@ function FullReportView({ query, onBack, onSlideDeck }: { query: string; onBack:
         {/* TOC sidebar */}
         <div className="hidden xl:flex flex-col w-56 shrink-0 sticky top-[57px] h-[calc(100vh-57px)] overflow-auto border-r border-border bg-background">
           <div className="p-5">
-            <p className="text-[10px] font-bold font-['Plus_Jakarta_Sans'] uppercase tracking-widest text-muted-foreground mb-3">Daftar Isi</p>
+            <p className="text-[10px] font-bold font-['Plus_Jakarta_Sans'] uppercase tracking-widest text-muted-foreground mb-3">{copy.tableOfContents}</p>
             <nav className="space-y-0.5">
-              {FR_SECTIONS.map((sec, i) => (
+              {sections.map((sec, i) => (
                 <button key={i} onClick={() => setActiveSection(i)}
                   className={cn("w-full text-left px-3 py-2 rounded-lg text-[12px] font-['Plus_Jakarta_Sans'] transition-all",
                     activeSection === i ? "bg-primary/10 text-primary font-semibold" : "text-muted-foreground hover:text-foreground hover:bg-muted/50")}>
@@ -1926,7 +2100,7 @@ function FullReportView({ query, onBack, onSlideDeck }: { query: string; onBack:
 
         {/* Sections */}
         <div className="flex-1 min-w-0 px-6 md:px-10 py-8 space-y-4 max-w-4xl">
-          {FR_SECTIONS.map((title, i) => (
+          {sections.map((title, i) => (
             <div key={i} className="bg-card rounded-xl border border-border overflow-hidden">
               <button onClick={() => toggle(i)}
                 className="w-full px-5 py-4 flex items-center justify-between hover:bg-muted/30 transition-colors">
@@ -1941,21 +2115,25 @@ function FullReportView({ query, onBack, onSlideDeck }: { query: string; onBack:
                 <div className="px-5 pb-5 border-t border-border pt-4">
                   {i === 0 && (
                     <p className="text-[14px] font-['Plus_Jakarta_Sans'] text-foreground/80 leading-relaxed">
-                      Verdict: peluang layak diuji, bukan langsung ekspansi besar. Bukti mendukung pembukaan kafe spesialti kecil di koridor Dago jika 90 hari pertama dipakai untuk validasi menu, akuisisi komunitas, dan diferensiasi dari jaringan nasional. Skor kelayakan 82/100 didukung 2.847 data points, tetapi asumsi modal awal dan kapasitas tempat masih harus dikunci sebelum keputusan investasi final.
+                      {language === "id"
+                        ? `Verdict: peluang layak diuji, bukan langsung ekspansi besar. Bukti mendukung pembukaan kafe spesialti kecil di koridor Dago jika 90 hari pertama dipakai untuk validasi menu, akuisisi komunitas, dan diferensiasi dari jaringan nasional. Skor kelayakan 82/100 didukung ${dataPoints} data points, tetapi asumsi modal awal dan kapasitas tempat masih harus dikunci sebelum keputusan investasi final.`
+                        : `Verdict: the opportunity is worth piloting, not scaling into immediately. Evidence supports opening a small specialty cafe in the Dago corridor if the first 90 days are used for menu validation, community acquisition, and differentiation from national chains. The 82/100 viability score is backed by ${dataPoints} data points, but initial budget and seating capacity assumptions still need to be locked before a final investment decision.`}
                     </p>
                   )}
                   {i === 1 && (
                     <div>
                       <p className="text-[14px] font-['Plus_Jakarta_Sans'] text-foreground/80 leading-relaxed mb-4">
-                        Situasi pasar saat ini menunjukkan pertumbuhan permintaan yang konsisten. Tren work-from-café pasca pandemi belum mencapai titik jenuh, dan segmen premium masih underserved.
+                        {language === "id"
+                          ? "Situasi pasar saat ini menunjukkan pertumbuhan permintaan yang konsisten. Tren work-from-café pasca pandemi belum mencapai titik jenuh, dan segmen premium masih underserved."
+                          : "The current market shows consistent demand growth. The post-pandemic work-from-cafe trend hasn't reached saturation yet, and the premium segment remains underserved."}
                       </p>
                       <ResponsiveContainer width="100%" height={200}>
                         <LineChart data={r.sentimentTrend}>
                           <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: "JetBrains Mono" }} />
                           <YAxis tick={{ fontSize: 11, fontFamily: "JetBrains Mono" }} />
                           <Tooltip contentStyle={{ fontSize: 12, fontFamily: "Manrope", borderRadius: 8 }} />
-                          <Line type="monotone" dataKey="pos" stroke="#2F735F" strokeWidth={2} name="Sentimen Positif %" />
-                          <Line type="monotone" dataKey="neg" stroke="#A23F2F" strokeWidth={2} name="Sentimen Negatif %" />
+                          <Line type="monotone" dataKey="pos" stroke="#2F735F" strokeWidth={2} name={`${SENTIMENT_LABEL[language].positive} %`} />
+                          <Line type="monotone" dataKey="neg" stroke="#A23F2F" strokeWidth={2} name={`${SENTIMENT_LABEL[language].negative} %`} />
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
@@ -1964,7 +2142,9 @@ function FullReportView({ query, onBack, onSlideDeck }: { query: string; onBack:
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <p className="text-[13px] font-['Plus_Jakarta_Sans'] text-foreground/80 leading-relaxed mb-3">
-                          Dari 847 ulasan yang dikumpulkan, sentimen positif mendominasi di 71%, dengan driver utama: kualitas kopi, ambience, dan value for money.
+                          {language === "id"
+                            ? "Dari 847 ulasan yang dikumpulkan, sentimen positif mendominasi di 71%, dengan driver utama: kualitas kopi, ambience, dan value for money."
+                            : "Of the 847 reviews collected, positive sentiment dominates at 71%, driven mainly by coffee quality, ambience, and value for money."}
                         </p>
                         <ResponsiveContainer width="100%" height={160}>
                           <PieChart>
@@ -1976,13 +2156,13 @@ function FullReportView({ query, onBack, onSlideDeck }: { query: string; onBack:
                         </ResponsiveContainer>
                       </div>
                       <div>
-                        <p className="text-[11px] font-bold text-muted-foreground font-['Plus_Jakarta_Sans'] uppercase tracking-wide mb-3">Distribusi per Platform</p>
+                        <p className="text-[11px] font-bold text-muted-foreground font-['Plus_Jakarta_Sans'] uppercase tracking-wide mb-3">{copy.distributionPerPlatform}</p>
                         <ResponsiveContainer width="100%" height={160}>
                           <BarChart data={[{ p: "Google Maps", n: 312 }, { p: "Instagram", n: 284 }, { p: "TripAdvisor", n: 142 }, { p: "Twitter/X", n: 109 }]}>
                             <XAxis dataKey="p" tick={{ fontSize: 10, fontFamily: "JetBrains Mono" }} />
                             <YAxis tick={{ fontSize: 10, fontFamily: "JetBrains Mono" }} />
                             <Tooltip contentStyle={{ fontSize: 11, fontFamily: "Manrope", borderRadius: 8 }} />
-                            <Bar dataKey="n" fill="var(--primary)" radius={[4, 4, 0, 0]} name="Ulasan" />
+                            <Bar dataKey="n" fill="var(--primary)" radius={[4, 4, 0, 0]} name={copy.reviewsSeries} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -1993,7 +2173,7 @@ function FullReportView({ query, onBack, onSlideDeck }: { query: string; onBack:
                       <table className="w-full text-[13px] font-['Plus_Jakarta_Sans']">
                         <thead>
                           <tr className="border-b border-border">
-                            {["Kompetitor", "Skor", "Market Share", "YoY Growth"].map(h => (
+                            {[copy.competitor, language === "id" ? "Skor" : "Score", "Market Share", "YoY Growth"].map(h => (
                               <th key={h} className="text-left py-2 px-3 text-[11px] font-bold text-white/42 uppercase tracking-wide">{h}</th>
                             ))}
                           </tr>
@@ -2021,10 +2201,10 @@ function FullReportView({ query, onBack, onSlideDeck }: { query: string; onBack:
                   {i === 4 && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {[
-                        { label: "Strengths", items: r.swot.strengths, cls: "bg-emerald-50 border-emerald-200 text-emerald-800" },
-                        { label: "Weaknesses", items: r.swot.weaknesses, cls: "bg-red-50 border-red-200 text-red-800" },
-                        { label: "Opportunities", items: r.swot.opportunities, cls: "bg-blue-50 border-blue-200 text-blue-800" },
-                        { label: "Threats", items: r.swot.threats, cls: "bg-amber-50 border-amber-200 text-amber-800" },
+                        { label: copy.strengths, items: r.swot.strengths, cls: "bg-emerald-50 border-emerald-200 text-emerald-800" },
+                        { label: copy.weaknesses, items: r.swot.weaknesses, cls: "bg-red-50 border-red-200 text-red-800" },
+                        { label: copy.opportunities, items: r.swot.opportunities, cls: "bg-blue-50 border-blue-200 text-blue-800" },
+                        { label: copy.threats, items: r.swot.threats, cls: "bg-amber-50 border-amber-200 text-amber-800" },
                       ].map(({ label, items, cls }) => (
                         <div key={label} className={cn("p-3.5 rounded-xl border", cls)}>
                           <p className="text-[10px] font-bold uppercase tracking-wider mb-2 opacity-60">{label}</p>
@@ -2044,8 +2224,8 @@ function FullReportView({ query, onBack, onSlideDeck }: { query: string; onBack:
                             <p className="text-[13px] font-semibold font-['Plus_Jakarta_Sans'] text-foreground">{p.title}</p>
                           </div>
                           <div className="flex gap-2 items-center">
-                            <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold", p.impact === "Tinggi" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700")}>{p.impact}</span>
-                            <span className="text-[11px] font-['Plus_Jakarta_Sans'] text-muted-foreground">Upaya {p.effort.toLowerCase()}</span>
+                            <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold", p.impact === "high" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700")}>{LEVEL_LABEL[language][p.impact]}</span>
+                            <span className="text-[11px] font-['Plus_Jakarta_Sans'] text-muted-foreground">{copy.effortPrefix} {LEVEL_LABEL[language][p.effort].toLowerCase()}</span>
                             <span className="text-[11px] font-mono text-muted-foreground">{p.timeframe}</span>
                           </div>
                         </div>
@@ -2057,7 +2237,7 @@ function FullReportView({ query, onBack, onSlideDeck }: { query: string; onBack:
                       <table className="w-full text-[13px] font-['Plus_Jakarta_Sans']">
                         <thead>
                           <tr className="border-b border-border">
-                            {["Risiko", "Probabilitas", "Dampak", "Mitigasi"].map(h => (
+                            {[language === "id" ? "Risiko" : "Risk", copy.probability, copy.impact, copy.mitigation].map(h => (
                               <th key={h} className="text-left py-2 px-3 text-[11px] font-bold text-white/42 uppercase tracking-wide">{h}</th>
                             ))}
                           </tr>
@@ -2067,10 +2247,10 @@ function FullReportView({ query, onBack, onSlideDeck }: { query: string; onBack:
                             <tr key={ri.risk} className="border-b border-border hover:bg-muted/20">
                               <td className="py-2.5 px-3 font-medium text-foreground">{ri.risk}</td>
                               <td className="py-2.5 px-3">
-                                <span className={cn("px-2 py-0.5 rounded text-[11px] font-semibold", ri.prob === "Tinggi" ? "bg-red-100 text-red-700" : ri.prob === "Sedang" ? "bg-amber-100 text-amber-700" : "bg-green-100 text-green-700")}>{ri.prob}</span>
+                                <span className={cn("px-2 py-0.5 rounded text-[11px] font-semibold", ri.prob === "high" ? "bg-red-100 text-red-700" : ri.prob === "medium" ? "bg-amber-100 text-amber-700" : "bg-green-100 text-green-700")}>{LEVEL_LABEL[language][ri.prob]}</span>
                               </td>
                               <td className="py-2.5 px-3">
-                                <span className={cn("px-2 py-0.5 rounded text-[11px] font-semibold", ri.impact === "Tinggi" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700")}>{ri.impact}</span>
+                                <span className={cn("px-2 py-0.5 rounded text-[11px] font-semibold", ri.impact === "high" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700")}>{LEVEL_LABEL[language][ri.impact]}</span>
                               </td>
                               <td className="py-2.5 px-3 text-muted-foreground text-[12px]">{ri.mitigation}</td>
                             </tr>
@@ -2090,16 +2270,26 @@ function FullReportView({ query, onBack, onSlideDeck }: { query: string; onBack:
                           <div className="h-1.5 bg-white/10 rounded-full overflow-hidden mb-1.5">
                             <div className="h-full bg-gradient-to-r from-primary to-accent rounded-full" style={{ width: `${c.conf}%` }} />
                           </div>
-                          <p className="text-[11px] text-muted-foreground font-['Plus_Jakarta_Sans']">Sumber: {c.source}</p>
+                          <p className="text-[11px] text-muted-foreground font-['Plus_Jakarta_Sans']">{copy.source}: {c.source}</p>
                         </div>
                       ))}
                     </div>
                   )}
                   {i === 8 && (
                     <div className="text-[13px] font-['Plus_Jakarta_Sans'] text-foreground/80 leading-relaxed space-y-2">
-                      <p>Data dikumpulkan melalui pipeline 4-agen AI yang berjalan di atas AMD MI300X GPU (192 GB HBM3) menggunakan model Qwen3-235B.</p>
-                      <p>Sumber data: Google Maps, TripAdvisor, Instagram, Twitter/X, Tokopedia, media berita lokal, dan laporan BPS Jawa Barat 2026.</p>
-                      <p>Analisis sentimen menggunakan metode Aspect-Based Sentiment Analysis (ABSA) dengan threshold kepercayaan minimum 70%.</p>
+                      {language === "id" ? (
+                        <>
+                          <p>Data dikumpulkan melalui pipeline 4-agen AI yang berjalan di atas AMD MI300X GPU (192 GB HBM3) menggunakan model Qwen3-235B.</p>
+                          <p>Sumber data: Google Maps, TripAdvisor, Instagram, Twitter/X, Tokopedia, media berita lokal, dan laporan BPS Jawa Barat 2026.</p>
+                          <p>Analisis sentimen menggunakan metode Aspect-Based Sentiment Analysis (ABSA) dengan threshold kepercayaan minimum 70%.</p>
+                        </>
+                      ) : (
+                        <>
+                          <p>Data was collected through a 4-agent AI pipeline running on AMD MI300X GPUs (192 GB HBM3) using the Qwen3-235B model.</p>
+                          <p>Data sources: Google Maps, TripAdvisor, Instagram, Twitter/X, Tokopedia, local news media, and the 2026 West Java BPS report.</p>
+                          <p>Sentiment analysis uses Aspect-Based Sentiment Analysis (ABSA) with a minimum confidence threshold of 70%.</p>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -2115,14 +2305,17 @@ function FullReportView({ query, onBack, onSlideDeck }: { query: string; onBack:
 // ─── Slide deck ───────────────────────────────────────────────────────────────
 const TOTAL_SLIDES = 10;
 
-function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack: () => void; onFullReport: () => void }) {
+function SlideDeckView({ query, onBack, onFullReport, language }: { query: string; onBack: () => void; onFullReport: () => void; language: Language }) {
+  const copy = UI_COPY[language];
   const [slide, setSlide] = useState(0);
-  const r = REPORT_DATA;
+  const r = REPORT_DATA[language];
+  const dataPoints = language === "id" ? "2.847" : "2,847";
+  const id = language === "id";
 
   const sentPie = [
-    { name: "Positif", value: r.sentimentPos, color: "#2F735F" },
-    { name: "Netral", value: r.sentimentNeu, color: "#6C6254" },
-    { name: "Negatif", value: r.sentimentNeg, color: "#A23F2F" },
+    { name: SENTIMENT_LABEL[language].positive, value: r.sentimentPos, color: "#2F735F" },
+    { name: SENTIMENT_LABEL[language].neutral, value: r.sentimentNeu, color: "#6C6254" },
+    { name: SENTIMENT_LABEL[language].negative, value: r.sentimentNeg, color: "#A23F2F" },
   ];
 
   const SLIDES: React.ReactNode[] = [
@@ -2136,9 +2329,9 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
       <div>
         <p className="text-primary text-xs font-mono uppercase tracking-widest mb-3">McKinsey SCR Framework</p>
         <h1 className="text-3xl md:text-4xl font-bold font-['Plus_Jakarta_Sans'] leading-snug mb-4">{query || r.topic}</h1>
-        <p className="text-white/50 text-[14px] font-['Plus_Jakarta_Sans'] mb-8">Brief keputusan · {r.date} · AMD MI300X + Qwen3-235B</p>
+        <p className="text-white/50 text-[14px] font-['Plus_Jakarta_Sans'] mb-8">{id ? "Brief keputusan" : "Decision brief"} · {r.date} · AMD MI300X + Qwen3-235B</p>
         <div className="flex flex-wrap gap-3">
-          {["Sentimen: +71%", "Kelayakan: 82/100", "2.847 data point", "4 tahap analisis"].map(tag => (
+          {(id ? ["Sentimen: +71%", "Kelayakan: 82/100", `${dataPoints} data point`, "4 tahap analisis"] : ["Sentiment: +71%", "Viability: 82/100", `${dataPoints} data points`, "4 analysis stages"]).map(tag => (
             <span key={tag} className="px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-white/70 text-[12px] font-['Plus_Jakarta_Sans']">{tag}</span>
           ))}
         </div>
@@ -2153,14 +2346,18 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
     <div key={1} className="h-full flex flex-col p-8 md:p-12 bg-white">
       <div className="mb-6">
         <p className="text-[11px] font-mono text-primary uppercase tracking-widest mb-1">01 · Situation</p>
-        <h2 className="text-2xl md:text-3xl font-bold font-['Plus_Jakarta_Sans'] text-[#0D1829]">Kondisi Pasar Saat Ini</h2>
+        <h2 className="text-2xl md:text-3xl font-bold font-['Plus_Jakarta_Sans'] text-[#0D1829]">{id ? "Kondisi Pasar Saat Ini" : "Current Market Conditions"}</h2>
       </div>
       <div className="grid grid-cols-3 gap-4 mb-6">
-        {[
+        {(id ? [
           { val: "34% YoY", label: "Pertumbuhan pasar kafe Bandung" },
           { val: "Rp 4,2 T", label: "Nilai pasar F&B Bandung 2026" },
           { val: "2.100+", label: "Outlet kafe aktif di Bandung" },
-        ].map(({ val, label }) => (
+        ] : [
+          { val: "34% YoY", label: "Bandung cafe market growth" },
+          { val: "Rp 4.2T", label: "Bandung F&B market value 2026" },
+          { val: "2,100+", label: "Active cafe outlets in Bandung" },
+        ]).map(({ val, label }) => (
           <div key={label} className="bg-[#F0F4FA] rounded-xl p-4 border border-[#E2E8F2]">
             <p className="text-2xl font-bold font-mono text-[#0D1829] mb-1">{val}</p>
             <p className="text-[12px] text-[#6C6254] font-['Plus_Jakarta_Sans']">{label}</p>
@@ -2173,8 +2370,8 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
             <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: "JetBrains Mono" }} />
             <YAxis tick={{ fontSize: 11, fontFamily: "JetBrains Mono" }} domain={[0, 100]} />
             <Tooltip contentStyle={{ fontSize: 12, fontFamily: "Manrope", borderRadius: 8 }} />
-            <Line type="monotone" dataKey="pos" stroke="#2F735F" strokeWidth={2.5} dot={{ r: 4 }} name="Sentimen Positif %" />
-            <Line type="monotone" dataKey="neg" stroke="#A23F2F" strokeWidth={2.5} dot={{ r: 4 }} name="Sentimen Negatif %" />
+            <Line type="monotone" dataKey="pos" stroke="#2F735F" strokeWidth={2.5} dot={{ r: 4 }} name={`${SENTIMENT_LABEL[language].positive} %`} />
+            <Line type="monotone" dataKey="neg" stroke="#A23F2F" strokeWidth={2.5} dot={{ r: 4 }} name={`${SENTIMENT_LABEL[language].negative} %`} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -2184,7 +2381,7 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
     <div key={2} className="h-full flex flex-col p-8 md:p-12 bg-white">
       <div className="mb-6">
         <p className="text-[11px] font-mono text-amber-500 uppercase tracking-widest mb-1">02 · Complication</p>
-        <h2 className="text-2xl md:text-3xl font-bold font-['Plus_Jakarta_Sans'] text-[#0D1829]">Tantangan & Ancaman Utama</h2>
+        <h2 className="text-2xl md:text-3xl font-bold font-['Plus_Jakarta_Sans'] text-[#0D1829]">{id ? "Tantangan & Ancaman Utama" : "Key Challenges & Threats"}</h2>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
         {r.swot.threats.concat(r.swot.weaknesses).slice(0, 4).map((item, i) => (
@@ -2199,8 +2396,8 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
     // 3 · Consumer Voice
     <div key={3} className="h-full flex flex-col p-8 md:p-12 bg-white">
       <div className="mb-6">
-        <p className="text-[11px] font-mono text-primary uppercase tracking-widest mb-1">03 · Analisis Sentimen</p>
-        <h2 className="text-2xl md:text-3xl font-bold font-['Plus_Jakarta_Sans'] text-[#0D1829]">Suara Konsumen</h2>
+        <p className="text-[11px] font-mono text-primary uppercase tracking-widest mb-1">03 · {id ? "Analisis Sentimen" : "Sentiment Analysis"}</p>
+        <h2 className="text-2xl md:text-3xl font-bold font-['Plus_Jakarta_Sans'] text-[#0D1829]">{id ? "Suara Konsumen" : "Voice of the Customer"}</h2>
       </div>
       <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
         <ResponsiveContainer width="100%" height={220}>
@@ -2224,7 +2421,7 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
               </div>
             </div>
           ))}
-          <p className="text-[12px] text-[#6C6254] font-['Plus_Jakarta_Sans'] mt-2">Berdasarkan 847 ulasan dari 4 platform</p>
+          <p className="text-[12px] text-[#6C6254] font-['Plus_Jakarta_Sans'] mt-2">{copy.reviewsBasis}</p>
         </div>
       </div>
     </div>,
@@ -2233,14 +2430,14 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
     <div key={4} className="h-full flex flex-col p-8 md:p-12 bg-white">
       <div className="mb-5">
         <p className="text-[11px] font-mono text-primary uppercase tracking-widest mb-1">04 · SWOT Analysis</p>
-        <h2 className="text-2xl md:text-3xl font-bold font-['Plus_Jakarta_Sans'] text-[#0D1829]">Matriks SWOT</h2>
+        <h2 className="text-2xl md:text-3xl font-bold font-['Plus_Jakarta_Sans'] text-[#0D1829]">{id ? "Matriks SWOT" : "SWOT Matrix"}</h2>
       </div>
       <div className="flex-1 grid grid-cols-2 gap-3">
         {[
-          { label: "Strengths", items: r.swot.strengths, cls: "bg-emerald-50 border-emerald-200", hcls: "text-emerald-700" },
-          { label: "Weaknesses", items: r.swot.weaknesses, cls: "bg-red-50 border-red-200", hcls: "text-red-700" },
-          { label: "Opportunities", items: r.swot.opportunities, cls: "bg-blue-50 border-blue-200", hcls: "text-blue-700" },
-          { label: "Threats", items: r.swot.threats, cls: "bg-amber-50 border-amber-200", hcls: "text-amber-700" },
+          { label: copy.strengths, items: r.swot.strengths, cls: "bg-emerald-50 border-emerald-200", hcls: "text-emerald-700" },
+          { label: copy.weaknesses, items: r.swot.weaknesses, cls: "bg-red-50 border-red-200", hcls: "text-red-700" },
+          { label: copy.opportunities, items: r.swot.opportunities, cls: "bg-blue-50 border-blue-200", hcls: "text-blue-700" },
+          { label: copy.threats, items: r.swot.threats, cls: "bg-amber-50 border-amber-200", hcls: "text-amber-700" },
         ].map(({ label, items, cls, hcls }) => (
           <div key={label} className={cn("rounded-xl border p-4", cls)}>
             <p className={cn("text-[11px] font-bold uppercase tracking-wide mb-2", hcls)}>{label}</p>
@@ -2258,7 +2455,7 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
     <div key={5} className="h-full flex flex-col p-8 md:p-12 bg-gradient-to-br from-[#0B1628] to-[#1A3B6E] text-white">
       <div className="mb-6">
         <p className="text-[11px] font-mono text-primary uppercase tracking-widest mb-1">05 · Resolution</p>
-        <h2 className="text-2xl md:text-3xl font-bold font-['Plus_Jakarta_Sans']">Rekomendasi Strategis</h2>
+        <h2 className="text-2xl md:text-3xl font-bold font-['Plus_Jakarta_Sans']">{id ? "Rekomendasi Strategis" : "Strategic Recommendations"}</h2>
       </div>
       <div className="flex-1 space-y-3">
         {r.priorities.map((p) => (
@@ -2268,7 +2465,7 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
               <p className="text-[14px] font-semibold font-['Plus_Jakarta_Sans']">{p.title}</p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <span className={cn("px-2.5 py-1 rounded-lg text-[11px] font-bold", p.impact === "Tinggi" ? "bg-red-500/30 text-red-200" : "bg-amber-500/30 text-amber-200")}>{p.impact}</span>
+              <span className={cn("px-2.5 py-1 rounded-lg text-[11px] font-bold", p.impact === "high" ? "bg-red-500/30 text-red-200" : "bg-amber-500/30 text-amber-200")}>{LEVEL_LABEL[language][p.impact]}</span>
               <span className="text-white/50 text-[11px] font-mono">{p.timeframe}</span>
             </div>
           </div>
@@ -2279,7 +2476,7 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
     // 6 · Financials
     <div key={6} className="h-full flex flex-col p-8 md:p-12 bg-white">
       <div className="mb-6">
-        <p className="text-[11px] font-mono text-primary uppercase tracking-widest mb-1">06 · Proyeksi Finansial</p>
+        <p className="text-[11px] font-mono text-primary uppercase tracking-widest mb-1">06 · {id ? "Proyeksi Finansial" : "Financial Projections"}</p>
         <h2 className="text-2xl md:text-3xl font-bold font-['Plus_Jakarta_Sans'] text-[#0D1829]">Revenue Forecast 2026</h2>
       </div>
       <div className="flex-1">
@@ -2300,7 +2497,7 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
     <div key={7} className="h-full flex flex-col p-8 md:p-12 bg-white">
       <div className="mb-6">
         <p className="text-[11px] font-mono text-amber-500 uppercase tracking-widest mb-1">07 · Risk Register</p>
-        <h2 className="text-2xl md:text-3xl font-bold font-['Plus_Jakarta_Sans'] text-[#0D1829]">Matriks Risiko</h2>
+        <h2 className="text-2xl md:text-3xl font-bold font-['Plus_Jakarta_Sans'] text-[#0D1829]">{id ? "Matriks Risiko" : "Risk Matrix"}</h2>
       </div>
       <div className="flex-1 space-y-3">
         {r.risks.map((ri) => (
@@ -2311,8 +2508,8 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
               <p className="text-[12px] text-[#6C6254] font-['Plus_Jakarta_Sans']">{ri.mitigation}</p>
             </div>
             <div className="flex flex-col gap-1 items-end shrink-0">
-              <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold", ri.prob === "Tinggi" ? "bg-red-100 text-red-700" : ri.prob === "Sedang" ? "bg-amber-100 text-amber-700" : "bg-green-100 text-green-700")}>{ri.prob}</span>
-              <span className="text-[10px] text-[#6C6254] font-['Plus_Jakarta_Sans']">Prob.</span>
+              <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold", ri.prob === "high" ? "bg-red-100 text-red-700" : ri.prob === "medium" ? "bg-amber-100 text-amber-700" : "bg-green-100 text-green-700")}>{LEVEL_LABEL[language][ri.prob]}</span>
+              <span className="text-[10px] text-[#6C6254] font-['Plus_Jakarta_Sans']">{id ? "Prob." : "Prob."}</span>
             </div>
           </div>
         ))}
@@ -2326,11 +2523,15 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
         <h2 className="text-2xl md:text-3xl font-bold font-['Plus_Jakarta_Sans'] text-[#0D1829]">90-Day Roadmap</h2>
       </div>
       <div className="flex-1 grid grid-cols-3 gap-4">
-        {[
+        {(id ? [
           { phase: "Bulan 1", color: "var(--primary)", items: ["Audit digital presence", "Setup Google My Business", "Mulai loyalty program beta"] },
           { phase: "Bulan 2-3", color: "#1F6F64", items: ["Launch Instagram Ads", "Implement menu engineering", "Onboard 500 loyalty members"] },
           { phase: "Bulan 3+", color: "#0B7A6A", items: ["Evaluasi co-working pivot", "Ekspansi ke outlet ke-2", "Scale digital marketing"] },
-        ].map(({ phase, color, items }) => (
+        ] : [
+          { phase: "Month 1", color: "var(--primary)", items: ["Audit digital presence", "Set up Google My Business", "Start loyalty program beta"] },
+          { phase: "Month 2-3", color: "#1F6F64", items: ["Launch Instagram Ads", "Implement menu engineering", "Onboard 500 loyalty members"] },
+          { phase: "Month 3+", color: "#0B7A6A", items: ["Evaluate co-working pivot", "Expand to 2nd outlet", "Scale digital marketing"] },
+        ]).map(({ phase, color, items }) => (
           <div key={phase} className="p-4 rounded-xl border-2" style={{ borderColor: `${color}30`, background: `${color}08` }}>
             <p className="text-[12px] font-bold font-['Plus_Jakarta_Sans'] mb-3" style={{ color }}>{phase}</p>
             <ul className="space-y-2">
@@ -2348,14 +2549,19 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
     // 9 · Conclusion
     <div key={9} className="h-full flex flex-col justify-between p-10 md:p-14 bg-gradient-to-br from-[#0B1628] to-[#1A3B6E] text-white">
       <div>
-        <p className="text-[11px] font-mono text-primary uppercase tracking-widest mb-2">09 · Kesimpulan</p>
-        <h2 className="text-3xl font-bold font-['Plus_Jakarta_Sans'] mb-6">Peluang Nyata, Tindakan Segera</h2>
+        <p className="text-[11px] font-mono text-primary uppercase tracking-widest mb-2">09 · {id ? "Kesimpulan" : "Conclusion"}</p>
+        <h2 className="text-3xl font-bold font-['Plus_Jakarta_Sans'] mb-6">{id ? "Peluang Nyata, Tindakan Segera" : "Real Opportunity, Immediate Action"}</h2>
         <p className="text-white/70 text-[15px] font-['Plus_Jakarta_Sans'] leading-relaxed max-w-lg">
-          Pasar kafe di Dago layak diuji melalui peluncuran kecil, bukan ekspansi besar sejak hari pertama. Skor kelayakan 82/100 dan sentimen positif 71% cukup kuat untuk memulai validasi 90 hari, dengan fokus pada menu, komunitas, dan disiplin biaya.
+          {id
+            ? "Pasar kafe di Dago layak diuji melalui peluncuran kecil, bukan ekspansi besar sejak hari pertama. Skor kelayakan 82/100 dan sentimen positif 71% cukup kuat untuk memulai validasi 90 hari, dengan fokus pada menu, komunitas, dan disiplin biaya."
+            : "The Dago cafe market is worth testing through a small launch, not a large expansion from day one. An 82/100 viability score and 71% positive sentiment are strong enough to begin a 90-day validation, focused on menu, community, and cost discipline."}
         </p>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[{ v: "82/100", l: "Skor kelayakan" }, { v: "+71%", l: "Sentimen positif" }, { v: "34% YoY", l: "Pertumbuhan pasar" }, { v: "90 hari", l: "Periode validasi" }].map(({ v, l }) => (
+        {(id
+          ? [{ v: "82/100", l: "Skor kelayakan" }, { v: "+71%", l: "Sentimen positif" }, { v: "34% YoY", l: "Pertumbuhan pasar" }, { v: "90 hari", l: "Periode validasi" }]
+          : [{ v: "82/100", l: "Viability score" }, { v: "+71%", l: "Positive sentiment" }, { v: "34% YoY", l: "Market growth" }, { v: "90 days", l: "Validation period" }]
+        ).map(({ v, l }) => (
           <div key={l} className="bg-white/10 rounded-xl p-3.5 border border-white/15 text-center">
             <p className="text-lg font-bold font-mono text-white">{v}</p>
             <p className="text-[11px] text-white/50 font-['Plus_Jakarta_Sans'] mt-0.5">{l}</p>
@@ -2374,15 +2580,15 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
       {/* Deck header */}
       <div className="flex items-center justify-between px-6 py-3 border-b border-white/5">
         <button onClick={onBack} className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-[13px] font-['Plus_Jakarta_Sans']">
-          <ChevronLeft size={16} /> Kembali ke Report
+          <ChevronLeft size={16} /> {copy.backToReport}
         </button>
         <div className="flex items-center gap-3">
           <span className="text-white/40 text-[11px] font-mono">{slide + 1} / {TOTAL_SLIDES}</span>
           <button onClick={onFullReport} className="px-3 py-1.5 rounded-lg bg-white/10 text-white/60 hover:text-white hover:bg-white/15 transition-all text-[12px] font-['Plus_Jakarta_Sans']">
-            Full Report
+            {copy.fullReport}
           </button>
           <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-[12px] font-['Plus_Jakarta_Sans'] font-medium hover:bg-primary transition-all">
-            <Download size={13} /> Export
+            <Download size={13} /> {copy.exportBtn}
           </button>
         </div>
       </div>
@@ -2429,17 +2635,36 @@ function SlideDeckView({ query, onBack, onFullReport }: { query: string; onBack:
 }
 
 // ─── History ─────────────────────────────────────────────────────────────────
-const HISTORY_DATA = [
-  { id: 1, topic: "Kafe Spesialti di Area Dago, Bandung", date: "8 Jul 2026", time: "14:22", score: 82, sentiment: "Positif", tag: "F&B", status: "Selesai" },
-  { id: 2, topic: "Minimarket Lokal di Depok Timur", date: "7 Jul 2026", time: "09:15", score: 74, sentiment: "Netral", tag: "Retail", status: "Selesai" },
-  { id: 3, topic: "Laundry Kiloan di Bekasi Barat", date: "5 Jul 2026", time: "16:48", score: 68, sentiment: "Positif", tag: "Jasa", status: "Selesai" },
-  { id: 4, topic: "Warung Makan Padang di Sunter", date: "3 Jul 2026", time: "11:30", score: 77, sentiment: "Positif", tag: "F&B", status: "Selesai" },
-  { id: 5, topic: "Toko Baju Online Shopee & TikTok", date: "1 Jul 2026", time: "08:05", score: 65, sentiment: "Negatif", tag: "E-Commerce", status: "Selesai" },
+const HISTORY_DATA_SHARED = [
+  { id: 1, time: "14:22", score: 82, sentiment: "positive" as SentimentTag },
+  { id: 2, time: "09:15", score: 74, sentiment: "neutral" as SentimentTag },
+  { id: 3, time: "16:48", score: 68, sentiment: "positive" as SentimentTag },
+  { id: 4, time: "11:30", score: 77, sentiment: "positive" as SentimentTag },
+  { id: 5, time: "08:05", score: 65, sentiment: "negative" as SentimentTag },
 ];
 
-function HistoryView({ onNavigate, onOpenReport }: { onNavigate: (s: Screen) => void; onOpenReport: (q: string) => void }) {
+const HISTORY_DATA: Record<Language, { id: number; topic: string; date: string; time: string; score: number; sentiment: SentimentTag; tag: string }[]> = {
+  id: [
+    { ...HISTORY_DATA_SHARED[0], topic: "Kafe Spesialti di Area Dago, Bandung", date: "8 Jul 2026", tag: "F&B" },
+    { ...HISTORY_DATA_SHARED[1], topic: "Minimarket Lokal di Depok Timur", date: "7 Jul 2026", tag: "Retail" },
+    { ...HISTORY_DATA_SHARED[2], topic: "Laundry Kiloan di Bekasi Barat", date: "5 Jul 2026", tag: "Jasa" },
+    { ...HISTORY_DATA_SHARED[3], topic: "Warung Makan Padang di Sunter", date: "3 Jul 2026", tag: "F&B" },
+    { ...HISTORY_DATA_SHARED[4], topic: "Toko Baju Online Shopee & TikTok", date: "1 Jul 2026", tag: "E-Commerce" },
+  ],
+  en: [
+    { ...HISTORY_DATA_SHARED[0], topic: "Specialty Cafe in the Dago Area, Bandung", date: "Jul 8, 2026", tag: "F&B" },
+    { ...HISTORY_DATA_SHARED[1], topic: "Local Minimarket in East Depok", date: "Jul 7, 2026", tag: "Retail" },
+    { ...HISTORY_DATA_SHARED[2], topic: "Laundry Service in West Bekasi", date: "Jul 5, 2026", tag: "Services" },
+    { ...HISTORY_DATA_SHARED[3], topic: "Padang Restaurant in Sunter", date: "Jul 3, 2026", tag: "F&B" },
+    { ...HISTORY_DATA_SHARED[4], topic: "Online Clothing Store on Shopee & TikTok", date: "Jul 1, 2026", tag: "E-Commerce" },
+  ],
+};
+
+function HistoryView({ onNavigate, onOpenReport, language }: { onNavigate: (s: Screen) => void; onOpenReport: (q: string) => void; language: Language }) {
+  const copy = UI_COPY[language];
   const [search, setSearch] = useState("");
-  const filtered = HISTORY_DATA.filter(h => h.topic.toLowerCase().includes(search.toLowerCase()));
+  const historyData = HISTORY_DATA[language];
+  const filtered = historyData.filter(h => h.topic.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="relative min-h-full overflow-hidden bg-[#030712] text-white">
@@ -2448,19 +2673,19 @@ function HistoryView({ onNavigate, onOpenReport }: { onNavigate: (s: Screen) => 
       <div className="relative px-6 md:px-8 py-7">
         <div className="mb-6 flex items-end justify-between gap-4">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#6EA8D8] font-['Plus_Jakarta_Sans']">Riwayat</p>
-            <h1 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-white font-['Plus_Jakarta_Sans']">Analisis tersimpan</h1>
-            <p className="mt-1 text-[12px] text-white/46 font-['Plus_Jakarta_Sans']">{HISTORY_DATA.length} laporan siap dibuka ulang</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#6EA8D8] font-['Plus_Jakarta_Sans']">{copy.history}</p>
+            <h1 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-white font-['Plus_Jakarta_Sans']">{copy.historySavedAnalyses}</h1>
+            <p className="mt-1 text-[12px] text-white/46 font-['Plus_Jakarta_Sans']">{language === "id" ? `${historyData.length} laporan siap dibuka ulang` : `${historyData.length} reports ready to reopen`}</p>
           </div>
           <button onClick={() => onNavigate("home")} className="flex items-center gap-1.5 rounded-full border border-blue-500/50 bg-gradient-to-t from-blue-500 to-blue-600 px-4 py-2 text-[13px] font-semibold text-white shadow-lg shadow-blue-900/40 transition-all hover:from-blue-400 hover:to-blue-600 font-['Plus_Jakarta_Sans']">
-            <FileText size={14} /> Analisis Baru
+            <FileText size={14} /> {copy.newAnalysisFull}
           </button>
         </div>
         {/* Search */}
         <div className="flex gap-3 mb-6">
           <div className="flex-1 flex items-center gap-2.5 bg-white/[0.055] border border-white/10 rounded-xl px-4 py-2.5 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/50 transition-all">
             <Search size={15} className="text-white/45 shrink-0" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari analisis..."
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={copy.historySearchShort}
               className="flex-1 bg-transparent text-[13px] font-['Plus_Jakarta_Sans'] text-white outline-none placeholder:text-white/36" />
           </div>
         </div>
@@ -2470,7 +2695,7 @@ function HistoryView({ onNavigate, onOpenReport }: { onNavigate: (s: Screen) => 
           <table className="w-full text-[13px] font-['Plus_Jakarta_Sans']">
             <thead className="bg-white/[0.055]">
               <tr>
-                {["Topik Analisis", "Tanggal", "Tag", "Sentimen", "Skor", ""].map(h => (
+                {[copy.historyTopic, copy.historyDate, "Tag", language === "id" ? "Sentimen" : "Sentiment", copy.historyScore, ""].map((h) => (
                   <th key={h} className="text-left px-5 py-3 text-[11px] font-bold text-white/42 uppercase tracking-wide">{h}</th>
                 ))}
               </tr>
@@ -2489,8 +2714,8 @@ function HistoryView({ onNavigate, onOpenReport }: { onNavigate: (s: Screen) => 
                     <span className="px-2 py-0.5 rounded-md bg-white/8 text-[11px] font-medium text-white/50">{item.tag}</span>
                   </td>
                   <td className="px-5 py-3.5">
-                    <span className={cn("text-[12px] font-semibold", item.sentiment === "Positif" ? "text-emerald-600" : item.sentiment === "Negatif" ? "text-red-600" : "text-amber-600")}>
-                      {item.sentiment}
+                    <span className={cn("text-[12px] font-semibold", item.sentiment === "positive" ? "text-emerald-600" : item.sentiment === "negative" ? "text-red-600" : "text-amber-600")}>
+                      {SENTIMENT_LABEL[language][item.sentiment]}
                     </span>
                   </td>
                   <td className="px-5 py-3.5">
@@ -2503,7 +2728,7 @@ function HistoryView({ onNavigate, onOpenReport }: { onNavigate: (s: Screen) => 
                   </td>
                   <td className="px-5 py-3.5">
                     <button className="px-3 py-1 rounded-lg border border-white/10 text-[12px] font-medium text-white/70 hover:bg-white/8 transition-all">
-                      Buka →
+                      {copy.historyOpen} →
                     </button>
                   </td>
                 </tr>
@@ -2523,7 +2748,7 @@ function HistoryView({ onNavigate, onOpenReport }: { onNavigate: (s: Screen) => 
               </div>
               <p className="text-[14px] font-semibold font-['Plus_Jakarta_Sans'] text-white mb-2 leading-snug">{item.topic}</p>
               <div className="flex items-center justify-between">
-                <span className={cn("text-[12px] font-semibold", item.sentiment === "Positif" ? "text-emerald-600" : item.sentiment === "Negatif" ? "text-red-600" : "text-amber-600")}>{item.sentiment}</span>
+                <span className={cn("text-[12px] font-semibold", item.sentiment === "positive" ? "text-emerald-600" : item.sentiment === "negative" ? "text-red-600" : "text-amber-600")}>{SENTIMENT_LABEL[language][item.sentiment]}</span>
                 <div className="flex items-center gap-2">
                   <div className="w-14 h-1.5 bg-white/10 rounded-full overflow-hidden">
                     <div className="h-full bg-primary rounded-full" style={{ width: `${item.score}%` }} />
@@ -2811,7 +3036,7 @@ export default function App() {
   };
 
   const confirmAnalysis = (extraContext = "") => {
-    const fullQuery = extraContext ? `${query || REPORT_DATA.topic}\n\nInformasi tambahan dari user:\n${extraContext}` : (query || REPORT_DATA.topic);
+    const fullQuery = extraContext ? `${query || REPORT_DATA[language].topic}\n\n${language === "id" ? "Informasi tambahan dari user" : "Additional context from user"}:\n${extraContext}` : (query || REPORT_DATA[language].topic);
     const analysis = frontendAdapter.createAnalysis(fullQuery);
 
     setQuery(analysis.topic);
@@ -2832,7 +3057,7 @@ export default function App() {
   if (screen === "slidedeck") {
     return (
       <SlideDeckView
-        query={query || REPORT_DATA.topic}
+        query={query || REPORT_DATA[language].topic}
         onBack={() => navigate("report")}
         onFullReport={() => navigate("fullreport")}
         language={language}
@@ -2860,7 +3085,7 @@ export default function App() {
       {screen === "briefreview" && <BriefReviewView query={query} onConfirm={confirmAnalysis} onBack={() => navigate("home")} language={language} />}
       {screen === "processing" && <ProcessingView query={query} onComplete={() => navigate("report")} language={language} />}
       {screen === "report" && <ReportView query={query} onBack={() => navigate("home")} onNavigate={navigate} language={language} />}
-      {screen === "fullreport" && <FullReportView query={query || REPORT_DATA.topic} onBack={() => navigate("report")} onSlideDeck={() => navigate("slidedeck")} language={language} />}
+      {screen === "fullreport" && <FullReportView query={query || REPORT_DATA[language].topic} onBack={() => navigate("report")} onSlideDeck={() => navigate("slidedeck")} language={language} />}
       {screen === "history" && <HistoryView onNavigate={navigate} onOpenReport={openReport} language={language} />}
       {screen === "subscription" && <AccountView mode="subscription" onLogout={() => { frontendAdapter.signOut(); navigate("login"); }} language={language} onLanguageChange={setLanguage} theme={theme} onThemeChange={setTheme} />}
       {screen === "account" && <AccountView mode="account" onLogout={() => { frontendAdapter.signOut(); navigate("login"); }} language={language} onLanguageChange={setLanguage} theme={theme} onThemeChange={setTheme} />}
