@@ -1362,27 +1362,12 @@ function HomeView({ onSubmit, onOpenReport, analysisCount, language }: { onSubmi
     return () => { cancelled = true; };
   }, [language]);
   const [query, setQuery] = useState("");
-  const [clarifying, setClarifying] = useState(false);
-  // Same detector BriefReviewView uses to build the real BusinessInput --
-  // previously this preview ran its own separate keyword regex, so it could
-  // (and did) disagree with what BriefReview showed a moment later for the
-  // same text. A 4th "Tujuan/Goal" field used to be shown here too, but
-  // buildBusinessInput() always sends a fixed primary_goals list regardless
-  // of input text, so "detecting" it was cosmetic and misleading -- dropped.
-  const detected = detectBrief(query, language);
-  const extractedBrief = [
-    { label: language === "id" ? "Industri" : "Industry", value: detected.category.label, complete: detected.category.detected },
-    { label: language === "id" ? "Lokasi" : "Location", value: detected.location.label, complete: detected.location.detected },
-    { label: language === "id" ? "Pelanggan" : "Customer", value: detected.customers.label, complete: detected.customers.detected },
-  ];
-  const completedBrief = extractedBrief.filter((item) => item.complete).length;
   const MIN_QUERY_LENGTH = 12;
   const trimmedQuery = query.trim();
   const tooShort = trimmedQuery.length > 0 && trimmedQuery.length < MIN_QUERY_LENGTH;
 
   const handleAsk = () => {
     if (!trimmedQuery || tooShort) return;
-    if (!clarifying && completedBrief < extractedBrief.length) { setClarifying(true); return; }
     onSubmit(query);
   };
 
@@ -1418,7 +1403,7 @@ function HomeView({ onSubmit, onOpenReport, analysisCount, language }: { onSubmi
           <div className="p-5">
             <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.055] p-5 focus-within:border-[#2A74C4]/70 focus-within:ring-4 focus-within:ring-[#2A74C4]/20">
               <textarea
-                value={query} onChange={(e) => { setQuery(e.target.value); setClarifying(false); }}
+                value={query} onChange={(e) => setQuery(e.target.value)}
                 placeholder={copy.dashboardPromptPlaceholder}
                 rows={4}
                 className="w-full resize-none bg-transparent text-[15px] leading-relaxed text-white outline-none placeholder:text-white/36 font-['Plus_Jakarta_Sans']"
@@ -1430,53 +1415,19 @@ function HomeView({ onSubmit, onOpenReport, analysisCount, language }: { onSubmi
               </div>
             </div>
 
-            {clarifying && (
-              <div className="mt-4 rounded-[1.25rem] border border-border bg-background/70 p-4">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <p className="text-[12px] font-semibold text-foreground font-['Plus_Jakarta_Sans']">{language === "id" ? "Preview brief terdeteksi" : "Detected brief preview"}</p>
-                  <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-semibold font-mono", completedBrief >= 3 ? "bg-success/15 text-success" : "bg-warning/15 text-warning")}>{completedBrief}/4</span>
-                </div>
-                <div className="grid gap-2 sm:grid-cols-4">
-                  {extractedBrief.map((item) => (
-                    <div key={item.label} className={cn("rounded-xl border px-3 py-2.5", item.complete ? "border-primary/20 bg-primary/8" : "border-dashed border-warning/55 bg-warning/10") }>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground font-mono">{item.label}</p>
-                      <p className={cn("mt-1 truncate text-[12px] font-semibold font-['Plus_Jakarta_Sans']", item.complete ? "text-foreground" : "text-warning")}>{item.complete ? item.value : (language === "id" ? "Belum jelas" : "Missing")}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {clarifying && (
-              <div className="mt-4 rounded-[1.25rem] border border-warning/45 bg-warning/10 p-4 text-foreground">
-                <div className="flex items-start gap-3">
-                  <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-warning/18 text-warning"><AlertTriangle size={15} /></span>
-                  <div>
-                    <p className="text-[13px] font-bold font-['Plus_Jakarta_Sans']">{language === "id" ? "Informasi kurang untuk analisis tajam." : "More information needed for sharper analysis."}</p>
-                    <p className="mt-1 text-[13px] leading-relaxed font-['Plus_Jakarta_Sans']">
-                      {completedBrief === 0
-                        ? (language === "id" ? "Belum ada detail yang terbaca dari kalimatmu. Lengkapi pertanyaan di bawah sebelum kuota dipakai." : "No details detected from your sentence yet. Complete the questions below before quota is used.")
-                        : (language === "id" ? "Brief awal siap sebagian. Lengkapi pertanyaan wajib sebelum kuota dipakai." : "First brief partially ready. Complete required questions before quota is used.")}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
             <div className="mt-4 flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2 text-white/50">
                 <span className="flex size-7 items-center justify-center rounded-lg border border-white/10 bg-white/6"><MapPin size={13} /></span>
                 <span className="text-[12px] font-['Plus_Jakarta_Sans']">
                   {tooShort
                     ? (language === "id" ? `Tulis minimal ${MIN_QUERY_LENGTH} karakter, mis. jenis usaha + lokasi.` : `Write at least ${MIN_QUERY_LENGTH} characters, e.g. business type + location.`)
-                    : clarifying ? (language === "id" ? "Ada detail yang perlu dilengkapi." : "Some details need completion.")
-                    : (language === "id" ? "Tidak ada isian wajib sebelum kirim." : "No required fields before submit.")}
+                    : (language === "id" ? "Kirim dulu, lalu Consultin cek detail yang kurang." : "Submit first; Consultin checks what details are missing next.")}
                 </span>
               </div>
               <button
                 onClick={handleAsk} disabled={!trimmedQuery || tooShort}
                 className="flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary px-5 text-[13px] font-semibold text-primary-foreground shadow-[0_14px_32px_rgba(42,116,196,0.24)] transition-[transform,background,box-shadow] hover:bg-secondary hover:text-secondary-foreground hover:shadow-[0_18px_42px_rgba(42,116,196,0.28)] active:scale-[0.98] disabled:opacity-40 font-['Plus_Jakarta_Sans']">
-                <Send size={14} /> {clarifying ? (language === "id" ? "Lengkapi informasi" : "Complete information") : copy.createBriefBtn}
+                <Send size={14} /> {copy.createBriefBtn}
               </button>
             </div>
           </div>
@@ -1683,7 +1634,7 @@ function BriefReviewView({ query, onConfirm, onBack, language }: { query: string
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const allAnswered = missing.every((field) => isFieldAnswered(field, answers));
   const answeredCount = missing.filter((field) => isFieldAnswered(field, answers)).length;
-  const progressPct = Math.round((answeredCount / missing.length) * 100);
+  const progressPct = missing.length ? Math.round((answeredCount / missing.length) * 100) : 100;
 
   return (
     <div className="min-h-full">
