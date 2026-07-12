@@ -1,0 +1,86 @@
+== Step 1: py_compile ==
+COMMAND: uv run python -m py_compile scraping/modules/bps.py
+OUTPUT:
+
+EXIT_CODE: 0
+
+== Step 2: failing reproduction ==
+COMMAND: set "PYTHONPATH=contracts;scraping;ml" && uv run python -c "from scraping.modules.bps import BpsModule; from contracts import ScopeConfig, BusinessInput, Location, IndustryCategory, BusinessStage; scope=ScopeConfig(business_input=BusinessInput(business_type='x', description='y', location=Location(city='Depok', province='Jawa Barat'), category=IndustryCategory.FOOD_BEVERAGE, radius_km=3.0, business_stage=BusinessStage.NEW), interpreted_summary='x', search_keywords=['x'], competitor_query='x', expires_at=__import__('datetime').datetime.now(__import__('datetime').timezone.utc)); b=BpsModule(); print('None:', b._make_item(scope, 'test', {'data': {}}, scope.business_input.location).raw_text); print('num:', b._make_item(scope, 'test', {'data': {'value': 12345.6}}, scope.business_input.location).raw_text); print('str:' , b._make_item(scope, 'test', {'data': {'value': '7890.5'}}, scope.business_input.location).raw_text); print('bad:', b._make_item(scope, 'test', {'data': {'value': 'abc'}}, scope.business_input.location).raw_text)"
+OUTPUT:
+None: Data BPS: Test di Jawa Barat (2023): N/A .
+num: Data BPS: Test di Jawa Barat (2023): 12,346 .
+str: Data BPS: Test di Jawa Barat (2023): 7,890 .
+bad: Data BPS: Test di Jawa Barat (2023): N/A .
+
+EXIT_CODE: 0
+
+== Step 3: extended value cases ==
+OUTPUT:
+None: Data BPS: Test di Jawa Barat (2023): N/A .
+num: Data BPS: Test di Jawa Barat (2023): 12,346 .
+str: Data BPS: Test di Jawa Barat (2023): 7,890 .
+bad: Data BPS: Test di Jawa Barat (2023): N/A .
+
+== Step 4: test_runner ==
+COMMAND: set PYTHONPATH=contracts;scraping && uv run python scraping/test_runner.py
+OUTPUT:
+============================================================
+TEST: ScraperRunner with mock modules
+============================================================
+Scope: 1d96166b-b0cc-4900-9c08-88c75712be26
+Modules: ['google_places_mock', 'tavily_web_search_mock', 'google_trends_mock', 'bps_statistics_mock', 'databoks_mock']
+
+Total raw items: 13
+After dedup: 13
+Degradation notes: []
+
+Module stats:
+  [OK] google_places_mock: 4 items
+  [OK] tavily_web_search_mock: 3 items
+  [OK] google_trends_mock: 2 items
+  [OK] bps_statistics_mock: 2 items
+  [OK] databoks_mock: 2 items
+
+Items by source_type:
+  places_listing: 2
+  review: 2
+  trends: 2
+  bps_stat: 2
+  databoks: 2
+  news: 1
+  blog: 1
+  article: 1
+
+Item validation:
+  [1] places_listing | google_places_mock | Kopi Kenangan Cikarang
+  [2] places_listing | google_places_mock | Starbucks Cikarang Mall
+  [3] review | google_places_mock | Review for Kopi Kenangan
+
+============================================================
+TEST PASSED
+============================================================
+
+============================================================
+TEST: Health report
+============================================================
+Health report:
+  google_places_mock: healthy
+  tavily_web_search_mock: healthy
+  google_trends_mock: healthy
+  bps_statistics_mock: healthy
+  databoks_mock: healthy
+
+TEST PASSED
+
+============================================================
+TEST: Deduplication
+============================================================
+Input: 3 items (2 same place_id, 1 different)
+After dedup: 2 items
+TEST PASSED
+
+============================================================
+ALL TESTS PASSED
+============================================================
+
+EXIT_CODE: 0
