@@ -136,9 +136,22 @@ class ScraperRunner:
         """Run a single module with circuit-breaker and timeout."""
         async with semaphore:
             try:
+                # Most modules are single-request and fine with the shared
+                # default, but async trigger->poll modules (e.g. BrightData
+                # TikTok) need real headroom over their own internal poll
+                # budget -- otherwise this outer wait_for fires first,
+                # cancelling the in-flight poll request before either the
+                # module's own graceful timeout OR the actual remote job
+                # gets a chance to finish (the remote job keeps running on
+                # BrightData's side regardless; we just stop listening for
+                # it). A module opts into a longer budget via an optional
+                # `timeout_seconds` attribute -- not part of the frozen
+                # ScraperModule Protocol, duck-typed so modules that don't
+                # need it are unaffected.
+                module_timeout = getattr(module, "timeout_seconds", MODULE_TIMEOUT_SECONDS)
                 items = await asyncio.wait_for(
                     module.fetch(scope),
-                    timeout=MODULE_TIMEOUT_SECONDS,
+                    timeout=module_timeout,
                 )
 
                 healthy = module.is_healthy()
@@ -158,7 +171,10 @@ class ScraperRunner:
                 )
 
             except asyncio.TimeoutError:
-                note = f"{module.name}: timeout after {MODULE_TIMEOUT_SECONDS:g}s"
+                # module_timeout was already resolved above -- asyncio.wait_for
+                # is the only thing in the try block that can raise this, and
+                # it happens after that assignment, so it's always set here.
+                note = f"{module.name}: timeout after {module_timeout:g}s"
                 logger.warning("ScraperRunner: %s", note)
                 return (
                     ModuleStats(

@@ -43,10 +43,24 @@ class BrightDataTiktokModule:
         api_key: Optional[str] = None,
         timeout: float = 60.0,
         max_posts: int = 15,
+        poll_max_wait: float = 200.0,
     ):
         self.api_key = api_key or os.getenv("BRIGHTDATA_API_KEY")
         self.timeout = timeout
         self.max_posts = max_posts
+        self.poll_max_wait = poll_max_wait
+        # Read by ScraperRunner._run_module's outer asyncio.wait_for instead
+        # of the shared MODULE_TIMEOUT_SECONDS default (see runner.py). Must
+        # exceed trigger time + poll_max_wait with real headroom -- previously
+        # the outer timeout (180s) and this module's own poll deadline (also
+        # 180s, but starting *after* the trigger call) were numerically equal
+        # but didn't share a clock, so the outer wait_for always fired first
+        # and killed the in-flight poll request before BrightData's job (or
+        # this module's own graceful timeout) ever got to finish. BrightData
+        # keeps running the job server-side regardless of us disconnecting --
+        # that's why the job can show as completed on their dashboard even
+        # though our side logged a timeout.
+        self.timeout_seconds = timeout + poll_max_wait + 20.0
         self._healthy = True
 
     def is_healthy(self) -> bool:
@@ -68,7 +82,7 @@ class BrightDataTiktokModule:
             if not snapshot_id:
                 return []
 
-            items_raw = await self._poll_snapshot(snapshot_id)
+            items_raw = await self._poll_snapshot(snapshot_id, max_wait=self.poll_max_wait)
             return self._parse_items(scope, items_raw, keyword, loc)
 
         except Exception as e:  # noqa: BLE001
@@ -110,7 +124,7 @@ class BrightDataTiktokModule:
             logger.info("BrightData TikTok triggered: snapshot=%s", snap)
             return snap
 
-    async def _poll_snapshot(self, snapshot_id: str, max_wait: float = 180.0) -> list[dict]:
+    async def _poll_snapshot(self, snapshot_id: str, max_wait: float = 200.0) -> list[dict]:
         """Poll snapshot until ready. Returns list of post dicts."""
         url = f"{BRIGHTDATA_BASE}/snapshot/{snapshot_id}"
         headers = {"Authorization": f"Bearer {self.api_key}"}
