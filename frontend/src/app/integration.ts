@@ -58,7 +58,7 @@ export type UsageSummary = {
   resetAt: string;
 };
 
-export type AuthProvider = "email" | "google" | "facebook" | "phone";
+export type AuthProvider = "email" | "google";
 
 export type AuthResult = {
   ok: boolean;

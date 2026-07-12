@@ -11,6 +11,11 @@ dist/
 .playwright-mcp/
 .serena/
 graphify-out/
+.claude/settings.local.json
+.claude/CLAUDE.local.md
+.claude/worktrees/
+data/*.sqlite3
+backend/*.sqlite3
 .venv/
 __pycache__/
 *.pyc

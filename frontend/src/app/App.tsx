@@ -5,9 +5,9 @@ import {
   TrendingUp, Download, BarChart2, MapPin, FileText,
   ChevronDown, Shield, Crown,
 
-  AlertTriangle, ArrowRight, ArrowLeft, Phone, Mail,
+  AlertTriangle, ArrowRight, ArrowLeft, Mail,
   Building2, Users, Activity, Target,
-  Globe, Layers, RefreshCw, CircleDot, Menu, X, Moon, Sun,
+  Globe, Layers, CircleDot, Menu, X, Moon, Sun,
 } from "lucide-react";
 import {
   BarChart, Bar, LineChart, Line, Cell, PieChart, Pie,
@@ -15,7 +15,7 @@ import {
 } from "recharts";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 import { frontendAdapter } from "./integration";
-import { api, ApiError } from "./api/client";
+import { api, ApiError, BASE_URL } from "./api/client";
 import {
   buildBusinessInput, detectBrief, BUDGET_OPTIONS, formatBudgetLabel, formatTimingLabel,
 } from "./api/businessInput";
@@ -33,7 +33,7 @@ import NanoReportImg from "@/app/assets/illustrations/nano/consultin-report.svg"
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Screen =
   | "splash" | "onboarding" | "login" | "signup"
-  | "phonenumber" | "phoneverify" | "forgotpassword" | "reset"
+  | "forgotpassword" | "reset"
   | "home" | "briefreview" | "processing" | "report" | "fullreport"
   | "slidedeck" | "history" | "subscription" | "account";
 
@@ -98,19 +98,6 @@ const UI_COPY = {
     signupLink: "Daftar",
     loginLink: "Masuk",
 
-    // Phone verify
-    phoneTitle: "Tambah Nomor Telepon",
-    phoneSubtitle: "Opsional · untuk keamanan akun dan notifikasi analisis",
-    phonePlaceholder: "8xx xxxx xxxx",
-    sendVerifyCode: "Kirim Kode Verifikasi",
-    later: "Nanti Saja",
-    phoneFooter: "Nomor telepon Anda hanya digunakan untuk keamanan dan tidak akan dibagikan kepada pihak ketiga.",
-    otpTitle: "Verifikasi Nomor",
-    otpSubtitle: "Masukkan kode 6 digit yang dikirim ke nomor Anda",
-    verifyButton: "Verifikasi",
-    resendIn: "Kirim ulang dalam",
-    resendButton: "Kirim ulang kode",
-    changePhoneButton: "← Ganti nomor telepon",
 
     // Reset Pass
     forgotPassTitle: "Reset Password",
@@ -307,19 +294,6 @@ const UI_COPY = {
     signupLink: "Register",
     loginLink: "Log In",
 
-    // Phone verify
-    phoneTitle: "Add Phone Number",
-    phoneSubtitle: "Optional · for account security and analysis notifications",
-    phonePlaceholder: "8xx xxxx xxxx",
-    sendVerifyCode: "Send Verification Code",
-    later: "Maybe Later",
-    phoneFooter: "Your phone number is only used for security and will never be shared with third parties.",
-    otpTitle: "Verify Number",
-    otpSubtitle: "Enter the 6-digit code sent to your number",
-    verifyButton: "Verify",
-    resendIn: "Resend in",
-    resendButton: "Resend code",
-    changePhoneButton: "← Change phone number",
 
     // Reset Pass
     forgotPassTitle: "Reset Password",
@@ -609,30 +583,20 @@ function InputField({
 }
 
 function SocialLoginRow({ language }: { language: Language }) {
-  const label = language === "id" ? "Segera hadir" : "Coming soon";
+  const label = language === "id" ? "Masuk dengan Google" : "Sign in with Google";
   return (
-    <div className="grid grid-cols-2 gap-3">
-      <button type="button" disabled title={label} aria-label={`Google — ${label}`}
-        className="py-3 rounded-xl border border-gray-200/80 bg-white text-[13px] font-['Plus_Jakarta_Sans'] font-semibold text-[#374151] flex items-center justify-center gap-2.5 shadow-xs cursor-not-allowed opacity-50">
-        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
-          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
-          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
-        </svg>
-        Google
-      </button>
-      <button type="button" disabled title={label} aria-label={`Facebook — ${label}`}
-        className="py-3 rounded-xl border border-gray-200/80 bg-white text-[13px] font-['Plus_Jakarta_Sans'] font-semibold text-[#374151] flex items-center justify-center gap-2.5 shadow-xs cursor-not-allowed opacity-50">
-        <svg className="w-4.5 h-4.5 text-[#1877F2] shrink-0" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-        </svg>
-        Facebook
-      </button>
-    </div>
+    <button type="button" onClick={() => { window.location.href = `${BASE_URL}/auth/google/start`; }} aria-label={label}
+      className="py-3 rounded-xl border border-gray-200/80 bg-white text-[13px] font-['Plus_Jakarta_Sans'] font-semibold text-[#374151] flex items-center justify-center gap-2.5 shadow-xs transition hover:bg-gray-50">
+      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
+        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
+        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
+      </svg>
+      {label}
+    </button>
   );
 }
-
 function PrimaryBtn({ children, onClick, disabled, className }: {
   children: React.ReactNode; onClick?: () => void; disabled?: boolean; className?: string;
 }) {
@@ -1280,164 +1244,19 @@ function SignupView({ onRegister, onSignIn, language, theme, onThemeChange, onLa
   );
 }
 
-// ─── Phone number ─────────────────────────────────────────────────────────────
-function PhoneNumberView({ onVerify, onLater, language, theme, onThemeChange, onLanguageChange }: {
-  onVerify: () => void; onLater: () => void;
-  language: Language; theme: ThemeMode; onThemeChange: (t: ThemeMode) => void;
-  onLanguageChange: (l: Language) => void;
-}) {
-  const [phone, setPhone] = useState("");
-  const copy = UI_COPY[language];
-  // Indonesian mobile numbers (without the +62 prefix, already shown
-  // separately) run roughly 8-12 digits -- digits-only, sanitized on input
-  // rather than merely validated, so "abc" can't be typed at all.
-  const digitsOnly = (v: string) => v.replace(/\D/g, "").slice(0, 12);
-  const validPhone = phone.length >= 8;
-  return (
-    <AuthSplit title={copy.phoneTitle} subtitle={copy.phoneSubtitle} language={language} onLanguageChange={onLanguageChange} theme={theme} onThemeChange={onThemeChange}>
-      <div className="space-y-4">
-        <div className="flex gap-2">
-          <div className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-3 shrink-0">
-            <div className="w-5 h-3.5 flex flex-col rounded-[2px] overflow-hidden border border-gray-200 shrink-0">
-              <div className="bg-red-600 flex-1" />
-              <div className="bg-white flex-1" />
-            </div>
-            <span className="text-sm font-['Plus_Jakarta_Sans'] text-white font-medium">+62</span>
-            <ChevronDown size={14} className="text-muted-foreground" />
-          </div>
-          <InputField
-            icon={Phone} placeholder={copy.phonePlaceholder} value={phone}
-            onChange={(v) => setPhone(digitsOnly(v))}
-            inputMode="numeric" pattern="[0-9]*" required autoComplete="tel-national"
-            error={phone.length > 0 && !validPhone ? (language === "id" ? "Nomor terlalu pendek." : "Number too short.") : undefined}
-          />
-        </div>
-        <PrimaryBtn onClick={onVerify} disabled={!validPhone}>{copy.sendVerifyCode}</PrimaryBtn>
-        <button onClick={onLater} className="w-full py-3.5 rounded-xl bg-muted text-muted-foreground text-sm font-['Plus_Jakarta_Sans'] font-medium hover:bg-muted/80 transition-all cursor-pointer">
-          {copy.later}
-        </button>
-        <p className="text-center text-[12px] text-muted-foreground font-['Plus_Jakarta_Sans']">
-          {copy.phoneFooter}
-        </p>
-      </div>
-    </AuthSplit>
-  );
-}
-
-// ─── OTP Verify ───────────────────────────────────────────────────────────────
-function PhoneVerifyView({ onVerify, onBack, language, theme, onThemeChange, onLanguageChange }: {
-  onVerify: () => void; onBack: () => void;
-  language: Language; theme: ThemeMode; onThemeChange: (t: ThemeMode) => void;
-  onLanguageChange: (l: Language) => void;
-}) {
-  // No real SMS/verification backend exists in this prototype -- rather
-  // than silently accepting any 6 digits (which reads as broken/insecure
-  // when tested), the demo code is fixed and shown up front, and a wrong
-  // code is rejected with a real error. See CLAUDE.md: login/history/
-  // pricing are intentionally mocked for this hackathon MVP.
-  const DEMO_OTP = "123456";
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [timer, setTimer] = useState(59);
-  const [wrongCode, setWrongCode] = useState(false);
-  const refs = otp.map(() => ({ current: null as HTMLInputElement | null }));
-  const copy = UI_COPY[language];
-
-  useEffect(() => {
-    const t = setInterval(() => setTimer(p => (p > 0 ? p - 1 : 0)), 1000);
-    return () => clearInterval(t);
-  }, []);
-
-  const handleDigit = (i: number, val: string) => {
-    const d = val.replace(/\D/g, "").slice(-1);
-    const next = [...otp];
-    next[i] = d;
-    setOtp(next);
-    setWrongCode(false);
-    if (d && i < 5) refs[i + 1].current?.focus();
-  };
-
-  const handlePaste = (e: React.ClipboardEvent) => {
-    const digits = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6).split("");
-    if (digits.length === 0) return;
-    e.preventDefault();
-    const next = [...otp];
-    digits.forEach((d, i) => { next[i] = d; });
-    setOtp(next);
-    setWrongCode(false);
-    refs[Math.min(digits.length, 5)].current?.focus();
-  };
-
-  const handleKey = (i: number, e: React.KeyboardEvent) => {
-    if (e.key === "Backspace" && !otp[i] && i > 0) refs[i - 1].current?.focus();
-  };
-
-  const handleVerify = () => {
-    if (otp.join("") === DEMO_OTP) { onVerify(); return; }
-    setWrongCode(true);
-  };
-
-  return (
-    <AuthSplit title={copy.otpTitle} subtitle={copy.otpSubtitle} language={language} onLanguageChange={onLanguageChange} theme={theme} onThemeChange={onThemeChange}>
-      <div className="space-y-6">
-        <p className="text-center text-[12px] text-muted-foreground font-['Plus_Jakarta_Sans']">
-          {language === "id" ? `Prototype demo -- kode demo: ${DEMO_OTP}` : `Prototype demo -- demo code: ${DEMO_OTP}`}
-        </p>
-        <div className="flex gap-2.5 justify-center" onPaste={handlePaste}>
-          {otp.map((d, i) => (
-            <input
-              key={i}
-              ref={(el) => { refs[i].current = el; }}
-              maxLength={1} value={d} inputMode="numeric" pattern="[0-9]*"
-              aria-label={language === "id" ? `Digit kode verifikasi ${i + 1}` : `Verification code digit ${i + 1}`}
-              aria-invalid={wrongCode || undefined}
-              onChange={(e) => handleDigit(i, e.target.value)}
-              onKeyDown={(e) => handleKey(i, e)}
-              className={cn(
-                "w-11 h-13 text-center text-xl font-bold font-mono rounded-xl border-2 bg-card text-foreground outline-none transition-all",
-                wrongCode ? "border-destructive" : d ? "border-primary shadow-[0_0_0_3px_rgba(42,116,196,0.15)]" : "border-border focus:border-primary",
-              )}
-            />
-          ))}
-        </div>
-        {wrongCode && (
-          <p className="text-center text-destructive text-[12px] font-['Plus_Jakarta_Sans'] flex items-center justify-center gap-1.5">
-            <AlertTriangle size={12} /> {language === "id" ? "Kode salah. Coba lagi." : "Wrong code. Try again."}
-          </p>
-        )}
-        <PrimaryBtn onClick={handleVerify} disabled={otp.some(d => !d)}>{copy.verifyButton}</PrimaryBtn>
-        <div className="text-center">
-          {timer > 0 ? (
-            <p className="text-[13px] text-muted-foreground font-['Plus_Jakarta_Sans']">
-              {copy.resendIn} <span className="font-mono text-white font-medium">0:{timer.toString().padStart(2,"0")}</span>
-            </p>
-          ) : (
-            <button onClick={() => setTimer(59)} className="text-[13px] text-primary font-['Plus_Jakarta_Sans'] font-semibold hover:text-primary transition-colors flex items-center gap-1.5 mx-auto cursor-pointer">
-              <RefreshCw size={13} /> {copy.resendButton}
-            </button>
-          )}
-        </div>
-        <button onClick={onBack} className="w-full text-center text-[13px] text-muted-foreground font-['Plus_Jakarta_Sans'] hover:text-foreground transition-colors cursor-pointer">
-          {copy.changePhoneButton}
-        </button>
-      </div>
-    </AuthSplit>
-  );
-}
-
 // ─── Forgot password ──────────────────────────────────────────────────────────
 function ForgotPasswordView({ onNext, onBack, language, theme, onThemeChange, onLanguageChange }: {
   onNext: () => void; onBack: () => void;
   language: Language; theme: ThemeMode; onThemeChange: (t: ThemeMode) => void;
   onLanguageChange: (l: Language) => void;
 }) {
-  const [method, setMethod] = useState<"email" | "phone" | null>(null);
+  const [method, setMethod] = useState<"email" | null>(null);
   const copy = UI_COPY[language];
   return (
     <AuthSplit title={copy.forgotPassTitle} subtitle={copy.forgotPassSubtitle} language={language} onLanguageChange={onLanguageChange} theme={theme} onThemeChange={onThemeChange}>
       <div className="space-y-4">
         {[
           { id: "email" as const, Icon: Mail, label: copy.emailMethodLabel, desc: copy.emailMethodDesc },
-          { id: "phone" as const, Icon: Phone, label: copy.whatsappMethodLabel, desc: copy.whatsappMethodDesc },
         ].map(({ id, Icon, label, desc }) => (
           <button
             key={id} onClick={() => setMethod(id)}
@@ -3598,10 +3417,14 @@ export default function App() {
 
   useEffect(() => {
     if (screen === "splash") {
+      let cancelled = false;
       const done = localStorage.getItem("consultin-onboarded") === "1";
       const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-      const t = setTimeout(() => setScreen(done ? "login" : "onboarding"), reduced ? 350 : 1400);
-      return () => clearTimeout(t);
+      const delay = reduced ? 350 : 1400;
+      api.me()
+        .then(() => { if (!cancelled) setTimeout(() => setScreen("home"), delay); })
+        .catch(() => { if (!cancelled) setTimeout(() => setScreen(done ? "login" : "onboarding"), delay); });
+      return () => { cancelled = true; };
     }
   }, [screen]);
 
@@ -3668,7 +3491,7 @@ export default function App() {
   };
 
   // Auth screens (full-page, no app shell)
-  const AUTH_SCREENS: Screen[] = ["splash", "onboarding", "login", "signup", "phonenumber", "phoneverify", "forgotpassword", "reset"];
+  const AUTH_SCREENS: Screen[] = ["splash", "onboarding", "login", "signup", "forgotpassword", "reset"];
   const isAuth = AUTH_SCREENS.includes(screen);
 
   // Slide deck is fullscreen (no sidebar)
@@ -3689,9 +3512,7 @@ export default function App() {
       case "splash": return <SplashView language={language} />;
       case "onboarding": return <OnboardingView onFinish={() => { localStorage.setItem("consultin-onboarded", "1"); navigate("login"); }} language={language} />;
       case "login": return <LoginView onLogin={() => { frontendAdapter.signIn("email"); navigate("home"); }} onSignup={() => navigate("signup")} onForgot={() => navigate("forgotpassword")} language={language} theme={theme} onThemeChange={setTheme} onLanguageChange={setLanguage} />;
-      case "signup": return <SignupView onRegister={() => { frontendAdapter.signIn("email"); navigate("phonenumber"); }} onSignIn={() => navigate("login")} language={language} theme={theme} onThemeChange={setTheme} onLanguageChange={setLanguage} />;
-      case "phonenumber": return <PhoneNumberView onVerify={() => navigate("phoneverify")} onLater={() => navigate("home")} language={language} theme={theme} onThemeChange={setTheme} onLanguageChange={setLanguage} />;
-      case "phoneverify": return <PhoneVerifyView onVerify={() => navigate("home")} onBack={() => navigate("phonenumber")} language={language} theme={theme} onThemeChange={setTheme} onLanguageChange={setLanguage} />;
+      case "signup": return <SignupView onRegister={() => { frontendAdapter.signIn("email"); navigate("home"); }} onSignIn={() => navigate("login")} language={language} theme={theme} onThemeChange={setTheme} onLanguageChange={setLanguage} />;
       case "forgotpassword": return <ForgotPasswordView onNext={() => navigate("reset")} onBack={() => navigate("login")} language={language} theme={theme} onThemeChange={setTheme} onLanguageChange={setLanguage} />;
       case "reset": return <ResetPasswordView onDone={() => navigate("login")} language={language} theme={theme} onThemeChange={setTheme} onLanguageChange={setLanguage} />;
       default: return null;
@@ -3706,8 +3527,8 @@ export default function App() {
       {screen === "report" && <ReportView query={query} onBack={() => navigate("home")} onNavigate={navigate} language={language} viewModel={viewModel} />}
       {screen === "fullreport" && <FullReportView query={query || REPORT_DATA[language].topic} onBack={() => navigate("report")} onSlideDeck={() => navigate("slidedeck")} language={language} viewModel={viewModel} />}
       {screen === "history" && <HistoryView onNavigate={navigate} onOpenReport={openReport} language={language} />}
-      {screen === "subscription" && <AccountView mode="subscription" onLogout={() => { frontendAdapter.signOut(); navigate("login"); }} language={language} onLanguageChange={setLanguage} theme={theme} onThemeChange={setTheme} />}
-      {screen === "account" && <AccountView mode="account" onLogout={() => { frontendAdapter.signOut(); navigate("login"); }} language={language} onLanguageChange={setLanguage} theme={theme} onThemeChange={setTheme} />}
+      {screen === "subscription" && <AccountView mode="subscription" onLogout={() => { api.logout().finally(() => { frontendAdapter.signOut(); navigate("login"); }); }} language={language} onLanguageChange={setLanguage} theme={theme} onThemeChange={setTheme} />}
+      {screen === "account" && <AccountView mode="account" onLogout={() => { api.logout().finally(() => { frontendAdapter.signOut(); navigate("login"); }); }} language={language} onLanguageChange={setLanguage} theme={theme} onThemeChange={setTheme} />}
     </AppShell>
   );
 }
