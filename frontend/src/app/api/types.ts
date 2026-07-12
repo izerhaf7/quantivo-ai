@@ -154,3 +154,10 @@ export type AnalysisSummary = {
   swot_confidence?: number | null;
   executive_summary?: string | null;
 };
+
+export type AuthUser = {
+  id: string;
+  email: string;
+  name?: string | null;
+  picture?: string | null;
+};

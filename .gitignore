@@ -1,9 +1,25 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+.DS_Store
+.cache/
+.vite/
+.impeccable/
+.opencode/
+.playwright-mcp/
+.serena/
+graphify-out/
+.claude/settings.local.json
+.claude/CLAUDE.local.md
+.claude/worktrees/
+data/*.sqlite3
+backend/*.sqlite3
 .venv/
 __pycache__/
 *.pyc
 .pytest_cache/
-node_modules/
-.env
 
 # Personal reference notes, not team-facing docs (see ml/README.md for that)
 ml/NOTES.md

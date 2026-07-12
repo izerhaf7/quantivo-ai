@@ -3,10 +3,10 @@
 // works behind the nginx proxy in production); override with
 // VITE_API_BASE_URL for pointing at a different backend during dev.
 import type {
-  AnalysisStatusResponse, AnalysisSummary, BusinessInput, CreateAnalysisResponse, Report,
+  AnalysisStatusResponse, AnalysisSummary, AuthUser, BusinessInput, CreateAnalysisResponse, Report,
 } from "./types";
 
-const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
+export const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
 
 export class ApiError extends Error {
   status: number;
@@ -19,6 +19,7 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
+    credentials: "include",
     ...init,
     headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
   });
@@ -48,6 +49,14 @@ export const api = {
 
   listAnalyses(): Promise<AnalysisSummary[]> {
     return request("/api/analyses");
+  },
+
+  me(): Promise<{ user: AuthUser }> {
+    return request("/auth/me");
+  },
+
+  logout(): Promise<{ ok: boolean }> {
+    return request("/auth/logout", { method: "POST" });
   },
 
   health(): Promise<{ status: string; redis: string }> {
