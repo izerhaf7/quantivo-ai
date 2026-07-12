@@ -48,10 +48,12 @@ const CITY_KEYWORDS: [RegExp, { city: string; district?: string; province?: stri
 ];
 
 // Generic Indonesian administrative-unit pattern ("kecamatan Cimanggis",
-// "kota Depok", "kabupaten Bogor", ...) -- catches real addresses the fixed
-// city list above doesn't know about, instead of silently defaulting every
-// unmatched query to Jakarta.
+// "kota Depok", "kabupaten Bogor", ...) plus bare place phrasing
+// ("di Cengkareng", "area Purworejo"). This is deliberately broader than
+// the fixed city list so odd but valid locations still flow into the review
+// form instead of being overwritten by a Jakarta fallback.
 const ADMIN_UNIT_RE = /\b(kecamatan|kec\.?|kelurahan|kel\.?|kota|kabupaten|kab\.?)\s+([a-z][a-z\s]{2,30}?)(?=,|\.|$|\bdi\b|\bkec|\bkel|\bkota|\bkab)/gi;
+const BARE_LOCATION_RE = /\b(?:di|area|kawasan|daerah|sekitar)\s+([a-z][a-z\s]{2,30}?)(?=,|\.|$|\buntuk\b|\bdengan\b|\bmodal\b|\btarget\b|\byang\b)/i;
 
 function detectLocationFromText(text: string): { city?: string; district?: string; province?: string } {
   let city: string | undefined;
@@ -68,6 +70,10 @@ function detectLocationFromText(text: string): { city?: string; district?: strin
     }
     // kelurahan is finer-grained than what BusinessInput.location models
     // (city/district/province only) -- intentionally not captured.
+  }
+  if (!city && !district) {
+    const bare = text.match(BARE_LOCATION_RE)?.[1]?.trim().replace(/\s+/g, " ");
+    if (bare) city = bare.replace(/\b\w/g, (c) => c.toUpperCase());
   }
   return { city, district };
 }
