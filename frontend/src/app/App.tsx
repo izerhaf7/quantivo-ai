@@ -15,6 +15,14 @@ import {
 } from "recharts";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 import { frontendAdapter } from "./integration";
+import { api, ApiError } from "./api/client";
+import {
+  buildBusinessInput, detectBrief, BUDGET_OPTIONS, formatBudgetLabel, formatTimingLabel,
+} from "./api/businessInput";
+import { reportToViewModel, type ReportViewModel } from "./api/reportAdapter";
+import { summaryToHistoryItem, type HistoryItem } from "./api/historyAdapter";
+import type { AnalysisStatus, AnalysisStatusResponse, Report } from "./api/types";
+import { TERMINAL_STATUSES } from "./api/types";
 import CLogoImg from "@/imports/C-Logo.svg";
 import ConsultinLogo from "@/imports/Consultin_Logo.svg";
 import OnboardingBriefImg from "@/app/assets/illustrations/onboarding-brief.webp";
@@ -30,8 +38,8 @@ type Screen =
   | "slidedeck" | "history" | "subscription" | "account";
 
 type ThemeMode = "light" | "dark";
-type Language = "id" | "en";
-type Level = "low" | "medium" | "high";
+export type Language = "id" | "en";
+export type Level = "low" | "medium" | "high";
 type SentimentTag = "positive" | "neutral" | "negative";
 
 const LEVEL_LABEL: Record<Language, Record<Level, string>> = {
@@ -210,6 +218,11 @@ const UI_COPY = {
     historyDeleted: "Laporan dihapus",
     historySavedAnalyses: "Analisis tersimpan",
     historySearchShort: "Cari analisis...",
+    historyLoading: "Memuat riwayat analisis...",
+    historyEmpty: "Belum ada analisis tersimpan",
+    historyEmptyDesc: "Analisis yang kamu jalankan akan muncul di sini.",
+    historyLoadError: "Gagal memuat riwayat analisis.",
+    historyInProgress: "Diproses",
 
     // Report extras
     reportMetaAgents: "agen",
@@ -414,6 +427,11 @@ const UI_COPY = {
     historyDeleted: "Report deleted",
     historySavedAnalyses: "Saved analyses",
     historySearchShort: "Search analyses...",
+    historyLoading: "Loading analysis history...",
+    historyEmpty: "No saved analyses yet",
+    historyEmptyDesc: "Analyses you run will show up here.",
+    historyLoadError: "Couldn't load analysis history.",
+    historyInProgress: "In progress",
 
     // Report extras
     reportMetaAgents: "agents",
@@ -561,21 +579,56 @@ function cn(...cls: (string | false | undefined)[]) {
 
 function InputField({
   icon: Icon, type = "text", placeholder, value, onChange, right,
+  required, minLength, autoComplete, inputMode, pattern, name, ariaLabel, error,
 }: {
   icon?: React.ElementType; type?: string; placeholder?: string;
   value: string; onChange: (v: string) => void; right?: React.ReactNode;
+  required?: boolean; minLength?: number; autoComplete?: string;
+  inputMode?: "text" | "numeric" | "tel" | "email"; pattern?: string;
+  name?: string; ariaLabel?: string; error?: string;
 }) {
   return (
-    <div className="rounded-[1.35rem] bg-white/[0.055] p-1 ring-1 ring-white/10 transition-[background,box-shadow] duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] focus-within:bg-blue-500/12 focus-within:ring-blue-400/35">
-      <div className="flex items-center gap-3 rounded-[calc(1.35rem-0.25rem)] bg-black/22 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-        {Icon && <Icon size={17} strokeWidth={1.8} className="text-white/46 shrink-0" />}
-        <input
-          type={type} placeholder={placeholder} value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="min-h-5 flex-1 bg-transparent text-white text-sm font-['Plus_Jakarta_Sans'] outline-none placeholder:text-white/34"
-        />
-        {right}
+    <div>
+      <div className={cn("rounded-[1.35rem] bg-white/[0.055] p-1 ring-1 transition-[background,box-shadow] duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] focus-within:bg-blue-500/12 focus-within:ring-blue-400/35", error ? "ring-destructive/60" : "ring-white/10")}>
+        <div className="flex items-center gap-3 rounded-[calc(1.35rem-0.25rem)] bg-black/22 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+          {Icon && <Icon size={17} strokeWidth={1.8} className="text-white/46 shrink-0" />}
+          <input
+            type={type} placeholder={placeholder} value={value}
+            onChange={(e) => onChange(e.target.value)}
+            required={required} minLength={minLength} autoComplete={autoComplete}
+            inputMode={inputMode} pattern={pattern} name={name}
+            aria-label={ariaLabel || placeholder} aria-invalid={error ? true : undefined}
+            className="min-h-5 flex-1 bg-transparent text-white text-sm font-['Plus_Jakarta_Sans'] outline-none placeholder:text-white/34"
+          />
+          {right}
+        </div>
       </div>
+      {error && <p className="mt-1.5 px-1 text-[12px] font-['Plus_Jakarta_Sans'] text-destructive">{error}</p>}
+    </div>
+  );
+}
+
+function SocialLoginRow({ language }: { language: Language }) {
+  const label = language === "id" ? "Segera hadir" : "Coming soon";
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <button type="button" disabled title={label} aria-label={`Google — ${label}`}
+        className="py-3 rounded-xl border border-gray-200/80 bg-white text-[13px] font-['Plus_Jakarta_Sans'] font-semibold text-[#374151] flex items-center justify-center gap-2.5 shadow-xs cursor-not-allowed opacity-50">
+        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
+        </svg>
+        Google
+      </button>
+      <button type="button" disabled title={label} aria-label={`Facebook — ${label}`}
+        className="py-3 rounded-xl border border-gray-200/80 bg-white text-[13px] font-['Plus_Jakarta_Sans'] font-semibold text-[#374151] flex items-center justify-center gap-2.5 shadow-xs cursor-not-allowed opacity-50">
+        <svg className="w-4.5 h-4.5 text-[#1877F2] shrink-0" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+        </svg>
+        Facebook
+      </button>
     </div>
   );
 }
@@ -668,15 +721,15 @@ const NAV_ITEMS = [
   { id: "account" as Screen, Icon: User, label: "Akun" },
 ] as const;
 
-function Sidebar({ active, onNavigate, analysisCount, language }: {
+function Sidebar({ active, onNavigate, analysisCount, language, className }: {
   active: Screen; onNavigate: (s: Screen) => void; analysisCount: number;
-  language: Language;
+  language: Language; className?: string;
 }) {
   const isHomeActive = (s: Screen) => ["home","briefreview","processing","report","fullreport"].includes(s);
   const copy = UI_COPY[language];
 
   return (
-    <aside className="hidden md:flex flex-col shrink-0 w-16 lg:w-[220px] xl:w-[240px] bg-[#0B1628] h-dvh sticky top-0 border-r border-white/[0.04]">
+    <aside className={cn("hidden md:flex flex-col shrink-0 w-16 lg:w-[220px] xl:w-[240px] bg-[#0B1628] h-dvh sticky top-0 border-r border-white/[0.04]", className)}>
       {/* Logo */}
       <div className="h-[60px] flex items-center px-4 lg:px-5 border-b border-white/[0.05]">
         <div className="lg:hidden">
@@ -734,9 +787,9 @@ function Sidebar({ active, onNavigate, analysisCount, language }: {
 }
 
 // Mobile bottom tab bar
-function MobileTabBar({ active, onNavigate }: { active: Screen; onNavigate: (s: Screen) => void }) {
+function MobileTabBar({ active, onNavigate, className }: { active: Screen; onNavigate: (s: Screen) => void; className?: string }) {
   return (
-    <div className="md:hidden fixed bottom-0 inset-x-0 bg-card/95 backdrop-blur-md border-t border-border flex items-center justify-around px-4 pt-2.5 pb-6 z-40">
+    <div className={cn("md:hidden fixed bottom-0 inset-x-0 bg-card/95 backdrop-blur-md border-t border-border flex items-center justify-around px-4 pt-2.5 pb-6 z-40", className)}>
       {NAV_ITEMS.map(({ id, Icon, label }) => {
         const on = id === "home" ? ["home","briefreview","processing","report","fullreport","slidedeck"].includes(active) : active === id;
         return (
@@ -761,10 +814,10 @@ function AppShell({ children, screen, onNavigate, analysisCount, language, onLan
 
   return (
     <div className="flex min-h-[100dvh] bg-background">
-      <Sidebar active={screen} onNavigate={onNavigate} analysisCount={analysisCount} language={language} />
+      <Sidebar active={screen} onNavigate={onNavigate} analysisCount={analysisCount} language={language} className="print:hidden" />
       <div className="flex-1 flex flex-col min-w-0">
         {/* Mobile Top Header */}
-        <header className="md:hidden sticky top-0 z-40 flex h-14 items-center bg-transparent px-4">
+        <header className="md:hidden sticky top-0 z-40 flex h-14 items-center bg-transparent px-4 print:hidden">
           <button onClick={() => onNavigate("home")} className="flex items-center rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300" aria-label="Kembali ke dashboard">
             <ImageWithFallback src={ConsultinLogo} alt="Consultin" className="h-7 w-auto object-contain brightness-0 invert drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)]" />
           </button>
@@ -775,7 +828,7 @@ function AppShell({ children, screen, onNavigate, analysisCount, language, onLan
           {children}
         </main>
       </div>
-      <MobileTabBar active={screen} onNavigate={onNavigate} />
+      <MobileTabBar active={screen} onNavigate={onNavigate} className="print:hidden" />
     </div>
   );
 }
@@ -1107,15 +1160,32 @@ function LoginView({ onLogin, onSignup, onForgot, language, theme, onThemeChange
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [showPass, setShowPass] = useState(false);
+  const [touched, setTouched] = useState(false);
   const copy = UI_COPY[language];
+  const id = language === "id";
+
+  const emailError = !email.trim() ? (id ? "Email wajib diisi." : "Email is required.")
+    : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ? (id ? "Format email tidak valid." : "Invalid email format.")
+    : undefined;
+  const passError = !pass ? (id ? "Password wajib diisi." : "Password is required.") : undefined;
+
+  const handleLogin = () => {
+    setTouched(true);
+    if (emailError || passError) return;
+    onLogin();
+  };
 
   return (
     <AuthSplit title={copy.loginTitle} subtitle={copy.loginSubtitle} language={language} onLanguageChange={onLanguageChange} theme={theme} onThemeChange={onThemeChange}>
       <div className="space-y-4">
-        <InputField icon={Mail} placeholder={copy.emailPlaceholder} value={email} onChange={setEmail} />
+        <InputField
+          icon={Mail} type="email" placeholder={copy.emailPlaceholder} value={email} onChange={setEmail}
+          required autoComplete="email" error={touched ? emailError : undefined}
+        />
         <InputField
           icon={Lock} type={showPass ? "text" : "password"} placeholder={copy.passwordPlaceholder}
           value={pass} onChange={setPass}
+          required autoComplete="current-password" error={touched ? passError : undefined}
           right={
             <button onClick={() => setShowPass(!showPass)} aria-label={showPass ? "Sembunyikan password" : "Tampilkan password"} className="text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md">
               {showPass ? <Eye size={16} /> : <EyeOff size={16} />}
@@ -1127,30 +1197,13 @@ function LoginView({ onLogin, onSignup, onForgot, language, theme, onThemeChange
             {copy.forgotPasswordLink}
           </button>
         </div>
-        <PrimaryBtn onClick={onLogin}>{copy.loginButton}</PrimaryBtn>
+        <PrimaryBtn onClick={handleLogin}>{copy.loginButton}</PrimaryBtn>
         <div className="relative flex items-center gap-3">
           <div className="flex-1 h-px bg-border" />
           <span className="text-xs text-muted-foreground font-['Plus_Jakarta_Sans']">{copy.or}</span>
           <div className="flex-1 h-px bg-border" />
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <button className="py-3 rounded-xl border border-gray-200/80 bg-white text-[13px] font-['Plus_Jakarta_Sans'] font-semibold text-[#374151] hover:bg-gray-50 active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 shadow-xs cursor-pointer">
-            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
-            </svg>
-            Google
-          </button>
-          <button className="py-3 rounded-xl border border-gray-200/80 bg-white text-[13px] font-['Plus_Jakarta_Sans'] font-semibold text-[#374151] hover:bg-gray-50 active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 shadow-xs cursor-pointer">
-            <svg className="w-4.5 h-4.5 text-[#1877F2] shrink-0" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-            </svg>
-
-            Facebook
-          </button>
-        </div>
+        <SocialLoginRow language={language} />
         <p className="text-center text-[13px] text-muted-foreground font-['Plus_Jakarta_Sans']">
           {copy.noAccount}{" "}
           <button onClick={onSignup} className="text-primary font-semibold hover:text-primary transition-colors">
@@ -1172,46 +1225,50 @@ function SignupView({ onRegister, onSignIn, language, theme, onThemeChange, onLa
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [showPass, setShowPass] = useState(false);
+  const [touched, setTouched] = useState(false);
   const copy = UI_COPY[language];
+  const id = language === "id";
+
+  const nameError = name.trim().length < 2 ? (id ? "Nama minimal 2 karakter." : "Name must be at least 2 characters.") : undefined;
+  const emailError = !email.trim() ? (id ? "Email wajib diisi." : "Email is required.")
+    : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ? (id ? "Format email tidak valid." : "Invalid email format.")
+    : undefined;
+  const passError = pass.length < 8 ? (id ? "Password minimal 8 karakter." : "Password must be at least 8 characters.") : undefined;
+
+  const handleRegister = () => {
+    setTouched(true);
+    if (nameError || emailError || passError) return;
+    onRegister();
+  };
 
   return (
     <AuthSplit title={copy.signupTitle} subtitle={copy.signupSubtitle} language={language} onLanguageChange={onLanguageChange} theme={theme} onThemeChange={onThemeChange}>
       <div className="space-y-4">
-        <InputField icon={User} placeholder={copy.namePlaceholder} value={name} onChange={setName} />
-        <InputField icon={Mail} placeholder={copy.emailPlaceholder} value={email} onChange={setEmail} />
+        <InputField
+          icon={User} placeholder={copy.namePlaceholder} value={name} onChange={setName}
+          required minLength={2} autoComplete="name" error={touched ? nameError : undefined}
+        />
+        <InputField
+          icon={Mail} type="email" placeholder={copy.emailPlaceholder} value={email} onChange={setEmail}
+          required autoComplete="email" error={touched ? emailError : undefined}
+        />
         <InputField
           icon={Lock} type={showPass ? "text" : "password"} placeholder={copy.passwordMinPlaceholder}
           value={pass} onChange={setPass}
+          required minLength={8} autoComplete="new-password" error={touched ? passError : undefined}
           right={
             <button onClick={() => setShowPass(!showPass)} aria-label={showPass ? "Sembunyikan password" : "Tampilkan password"} className="text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md">
               {showPass ? <Eye size={16} /> : <EyeOff size={16} />}
             </button>
           }
         />
-        <PrimaryBtn onClick={onRegister}>{copy.signupButton}</PrimaryBtn>
+        <PrimaryBtn onClick={handleRegister}>{copy.signupButton}</PrimaryBtn>
         <div className="relative flex items-center gap-3">
           <div className="flex-1 h-px bg-border" />
           <span className="text-xs text-muted-foreground font-['Plus_Jakarta_Sans']">{copy.or}</span>
           <div className="flex-1 h-px bg-border" />
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <button className="py-3 rounded-xl border border-gray-200/80 bg-white text-[13px] font-['Plus_Jakarta_Sans'] font-semibold text-[#374151] hover:bg-gray-50 active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 shadow-xs cursor-pointer">
-            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
-            </svg>
-            Google
-          </button>
-          <button className="py-3 rounded-xl border border-gray-200/80 bg-white text-[13px] font-['Plus_Jakarta_Sans'] font-semibold text-[#374151] hover:bg-gray-50 active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 shadow-xs cursor-pointer">
-            <svg className="w-4.5 h-4.5 text-[#1877F2] shrink-0" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-            </svg>
-
-            Facebook
-          </button>
-        </div>
+        <SocialLoginRow language={language} />
         <p className="text-center text-[13px] text-muted-foreground font-['Plus_Jakarta_Sans']">
           {copy.haveAccount}{" "}
           <button onClick={onSignIn} className="text-primary font-semibold hover:text-primary transition-colors">
@@ -1231,6 +1288,11 @@ function PhoneNumberView({ onVerify, onLater, language, theme, onThemeChange, on
 }) {
   const [phone, setPhone] = useState("");
   const copy = UI_COPY[language];
+  // Indonesian mobile numbers (without the +62 prefix, already shown
+  // separately) run roughly 8-12 digits -- digits-only, sanitized on input
+  // rather than merely validated, so "abc" can't be typed at all.
+  const digitsOnly = (v: string) => v.replace(/\D/g, "").slice(0, 12);
+  const validPhone = phone.length >= 8;
   return (
     <AuthSplit title={copy.phoneTitle} subtitle={copy.phoneSubtitle} language={language} onLanguageChange={onLanguageChange} theme={theme} onThemeChange={onThemeChange}>
       <div className="space-y-4">
@@ -1243,9 +1305,14 @@ function PhoneNumberView({ onVerify, onLater, language, theme, onThemeChange, on
             <span className="text-sm font-['Plus_Jakarta_Sans'] text-white font-medium">+62</span>
             <ChevronDown size={14} className="text-muted-foreground" />
           </div>
-          <InputField icon={Phone} placeholder={copy.phonePlaceholder} value={phone} onChange={setPhone} />
+          <InputField
+            icon={Phone} placeholder={copy.phonePlaceholder} value={phone}
+            onChange={(v) => setPhone(digitsOnly(v))}
+            inputMode="numeric" pattern="[0-9]*" required autoComplete="tel-national"
+            error={phone.length > 0 && !validPhone ? (language === "id" ? "Nomor terlalu pendek." : "Number too short.") : undefined}
+          />
         </div>
-        <PrimaryBtn onClick={onVerify} disabled={!phone.trim()}>{copy.sendVerifyCode}</PrimaryBtn>
+        <PrimaryBtn onClick={onVerify} disabled={!validPhone}>{copy.sendVerifyCode}</PrimaryBtn>
         <button onClick={onLater} className="w-full py-3.5 rounded-xl bg-muted text-muted-foreground text-sm font-['Plus_Jakarta_Sans'] font-medium hover:bg-muted/80 transition-all cursor-pointer">
           {copy.later}
         </button>
@@ -1263,8 +1330,15 @@ function PhoneVerifyView({ onVerify, onBack, language, theme, onThemeChange, onL
   language: Language; theme: ThemeMode; onThemeChange: (t: ThemeMode) => void;
   onLanguageChange: (l: Language) => void;
 }) {
+  // No real SMS/verification backend exists in this prototype -- rather
+  // than silently accepting any 6 digits (which reads as broken/insecure
+  // when tested), the demo code is fixed and shown up front, and a wrong
+  // code is rejected with a real error. See CLAUDE.md: login/history/
+  // pricing are intentionally mocked for this hackathon MVP.
+  const DEMO_OTP = "123456";
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [timer, setTimer] = useState(59);
+  const [wrongCode, setWrongCode] = useState(false);
   const refs = otp.map(() => ({ current: null as HTMLInputElement | null }));
   const copy = UI_COPY[language];
 
@@ -1278,32 +1352,59 @@ function PhoneVerifyView({ onVerify, onBack, language, theme, onThemeChange, onL
     const next = [...otp];
     next[i] = d;
     setOtp(next);
+    setWrongCode(false);
     if (d && i < 5) refs[i + 1].current?.focus();
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const digits = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6).split("");
+    if (digits.length === 0) return;
+    e.preventDefault();
+    const next = [...otp];
+    digits.forEach((d, i) => { next[i] = d; });
+    setOtp(next);
+    setWrongCode(false);
+    refs[Math.min(digits.length, 5)].current?.focus();
   };
 
   const handleKey = (i: number, e: React.KeyboardEvent) => {
     if (e.key === "Backspace" && !otp[i] && i > 0) refs[i - 1].current?.focus();
   };
 
+  const handleVerify = () => {
+    if (otp.join("") === DEMO_OTP) { onVerify(); return; }
+    setWrongCode(true);
+  };
+
   return (
     <AuthSplit title={copy.otpTitle} subtitle={copy.otpSubtitle} language={language} onLanguageChange={onLanguageChange} theme={theme} onThemeChange={onThemeChange}>
       <div className="space-y-6">
-        <div className="flex gap-2.5 justify-center">
+        <p className="text-center text-[12px] text-muted-foreground font-['Plus_Jakarta_Sans']">
+          {language === "id" ? `Prototype demo -- kode demo: ${DEMO_OTP}` : `Prototype demo -- demo code: ${DEMO_OTP}`}
+        </p>
+        <div className="flex gap-2.5 justify-center" onPaste={handlePaste}>
           {otp.map((d, i) => (
             <input
               key={i}
               ref={(el) => { refs[i].current = el; }}
-              maxLength={1} value={d}
+              maxLength={1} value={d} inputMode="numeric" pattern="[0-9]*"
+              aria-label={language === "id" ? `Digit kode verifikasi ${i + 1}` : `Verification code digit ${i + 1}`}
+              aria-invalid={wrongCode || undefined}
               onChange={(e) => handleDigit(i, e.target.value)}
               onKeyDown={(e) => handleKey(i, e)}
               className={cn(
                 "w-11 h-13 text-center text-xl font-bold font-mono rounded-xl border-2 bg-card text-foreground outline-none transition-all",
-                d ? "border-primary shadow-[0_0_0_3px_rgba(42,116,196,0.15)]" : "border-border focus:border-primary",
+                wrongCode ? "border-destructive" : d ? "border-primary shadow-[0_0_0_3px_rgba(42,116,196,0.15)]" : "border-border focus:border-primary",
               )}
             />
           ))}
         </div>
-        <PrimaryBtn onClick={onVerify} disabled={otp.some(d => !d)}>{copy.verifyButton}</PrimaryBtn>
+        {wrongCode && (
+          <p className="text-center text-destructive text-[12px] font-['Plus_Jakarta_Sans'] flex items-center justify-center gap-1.5">
+            <AlertTriangle size={12} /> {language === "id" ? "Kode salah. Coba lagi." : "Wrong code. Try again."}
+          </p>
+        )}
+        <PrimaryBtn onClick={handleVerify} disabled={otp.some(d => !d)}>{copy.verifyButton}</PrimaryBtn>
         <div className="text-center">
           {timer > 0 ? (
             <p className="text-[13px] text-muted-foreground font-['Plus_Jakarta_Sans']">
@@ -1375,19 +1476,39 @@ function ResetPasswordView({ onDone, language, theme, onThemeChange, onLanguageC
   const [confirm, setConfirm] = useState("");
   const [showP, setShowP] = useState(false);
   const [showC, setShowC] = useState(false);
+  const [done, setDone] = useState(false);
   const copy = UI_COPY[language];
+  const tooShort = pass.length > 0 && pass.length < 8;
+
+  if (done) {
+    return (
+      <AuthSplit title={copy.resetPassTitle} subtitle={copy.resetPassSubtitle} language={language} onLanguageChange={onLanguageChange} theme={theme} onThemeChange={onThemeChange}>
+        <div className="flex flex-col items-center gap-4 py-4 text-center">
+          <span className="flex size-12 items-center justify-center rounded-full bg-success/15 text-success"><CheckCircle2 size={24} /></span>
+          <div>
+            <p className="text-[15px] font-bold font-['Plus_Jakarta_Sans'] text-foreground">{language === "id" ? "Password berhasil diubah" : "Password changed successfully"}</p>
+            <p className="mt-1 text-[13px] text-muted-foreground font-['Plus_Jakarta_Sans']">{language === "id" ? "Silakan masuk dengan password baru." : "Please sign in with your new password."}</p>
+          </div>
+          <PrimaryBtn onClick={onDone}>{language === "id" ? "Kembali ke Login" : "Back to Login"}</PrimaryBtn>
+        </div>
+      </AuthSplit>
+    );
+  }
 
   return (
     <AuthSplit title={copy.resetPassTitle} subtitle={copy.resetPassSubtitle} language={language} onLanguageChange={onLanguageChange} theme={theme} onThemeChange={onThemeChange}>
       <div className="space-y-4">
         <InputField icon={Lock} type={showP ? "text" : "password"} placeholder={copy.newPassPlaceholder} value={pass} onChange={setPass}
+          required minLength={8} autoComplete="new-password"
+          error={tooShort ? (language === "id" ? "Password minimal 8 karakter." : "Password must be at least 8 characters.") : undefined}
           right={<button onClick={() => setShowP(!showP)} aria-label={showP ? "Sembunyikan password" : "Tampilkan password"} className="text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md">{showP ? <Eye size={16} /> : <EyeOff size={16} />}</button>} />
         <InputField icon={Lock} type={showC ? "text" : "password"} placeholder={copy.confirmPassPlaceholder} value={confirm} onChange={setConfirm}
+          required minLength={8} autoComplete="new-password"
           right={<button onClick={() => setShowC(!showC)} aria-label={showC ? "Sembunyikan konfirmasi password" : "Tampilkan konfirmasi password"} className="text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md">{showC ? <Eye size={16} /> : <EyeOff size={16} />}</button>} />
         {pass && confirm && pass !== confirm && (
           <p className="text-destructive text-[12px] font-['Plus_Jakarta_Sans'] flex items-center gap-1.5"><AlertTriangle size={12} /> {copy.passNotMatch}</p>
         )}
-        <PrimaryBtn onClick={onDone} disabled={!pass || pass !== confirm || pass.length < 8}>{copy.resetPassBtn}</PrimaryBtn>
+        <PrimaryBtn onClick={() => setDone(true)} disabled={!pass || pass !== confirm || pass.length < 8}>{copy.resetPassBtn}</PrimaryBtn>
       </div>
     </AuthSplit>
   );
@@ -1401,13 +1522,7 @@ const SUGGESTIONS = [
   "Warung makan di kawasan Sunter, Jakarta",
 ];
 
-const RECENT_ANALYSES = [
-  { topic: "Kafe di Dago Bandung", date: "Hari ini", score: 82, sentiment: "Positif", tag: "F&B" },
-  { topic: "Minimarket Depok Timur", date: "Kemarin", score: 74, sentiment: "Netral", tag: "Retail" },
-  { topic: "Laundry kiloan Bekasi", date: "3 hari lalu", score: 68, sentiment: "Positif", tag: "Jasa" },
-];
-
-function HomeView({ onSubmit, onOpenReport, analysisCount, language }: { onSubmit: (q: string) => void; onOpenReport: (q: string) => void; analysisCount: number; language: Language }) {
+function HomeView({ onSubmit, onOpenReport, analysisCount, language }: { onSubmit: (q: string) => void; onOpenReport: (item: HistoryItem) => void; analysisCount: number; language: Language }) {
   const copy = UI_COPY[language];
   const suggestions = language === "id" ? SUGGESTIONS : [
     "Specialty cafe in Dago Bandung",
@@ -1415,25 +1530,40 @@ function HomeView({ onSubmit, onOpenReport, analysisCount, language }: { onSubmi
     "Kilo laundry in West Bekasi",
     "Food stall in Sunter, Jakarta",
   ];
-  const recentAnalyses = language === "id" ? RECENT_ANALYSES : [
-    { topic: "Cafe in Dago Bandung", date: "Today", score: 82, sentiment: "Positive", tag: "F&B" },
-    { topic: "Minimarket in East Depok", date: "Yesterday", score: 74, sentiment: "Neutral", tag: "Retail" },
-    { topic: "Kilo laundry in Bekasi", date: "3 days ago", score: 68, sentiment: "Positive", tag: "Services" },
-  ];
+  const [recentAnalyses, setRecentAnalyses] = useState<HistoryItem[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    api.listAnalyses()
+      .then((summaries) => {
+        if (cancelled) return;
+        const ready = summaries.map((s) => summaryToHistoryItem(s, language)).filter((i) => i.isReady);
+        setRecentAnalyses(ready.slice(0, 3));
+      })
+      .catch(() => { /* recent-analyses is a convenience shortcut, not critical -- fail silently */ });
+    return () => { cancelled = true; };
+  }, [language]);
   const [query, setQuery] = useState("");
   const [clarifying, setClarifying] = useState(false);
-  const lowerQuery = query.toLowerCase();
+  // Same detector BriefReviewView uses to build the real BusinessInput --
+  // previously this preview ran its own separate keyword regex, so it could
+  // (and did) disagree with what BriefReview showed a moment later for the
+  // same text. A 4th "Tujuan/Goal" field used to be shown here too, but
+  // buildBusinessInput() always sends a fixed primary_goals list regardless
+  // of input text, so "detecting" it was cosmetic and misleading -- dropped.
+  const detected = detectBrief(query, language);
   const extractedBrief = [
-    { label: language === "id" ? "Industri" : "Industry", value: lowerQuery.includes("kafe") || lowerQuery.includes("cafe") ? "F&B / cafe" : lowerQuery.includes("laundry") ? "Services / laundry" : lowerQuery.includes("minimarket") ? "Retail / minimarket" : "-", complete: /kafe|cafe|laundry|minimarket|warung/.test(lowerQuery) },
-    { label: language === "id" ? "Lokasi" : "Location", value: lowerQuery.includes("dago") ? "Dago, Bandung" : lowerQuery.includes("depok") ? "Depok" : lowerQuery.includes("bekasi") ? "Bekasi" : lowerQuery.includes("sunter") ? "Sunter, Jakarta" : "-", complete: /dago|depok|bekasi|sunter|bandung|jakarta/.test(lowerQuery) },
-    { label: language === "id" ? "Pelanggan" : "Customer", value: lowerQuery.includes("mahasiswa") ? "Mahasiswa" : lowerQuery.includes("remote") ? "Remote workers" : lowerQuery.includes("b2b") ? "B2B" : lowerQuery.includes("b2c") ? "B2C" : "-", complete: /mahasiswa|remote|b2b|b2c|pekerja|customer|pelanggan/.test(lowerQuery) },
-    { label: language === "id" ? "Tujuan" : "Goal", value: lowerQuery.includes("kompetitor") ? "Competitor scan" : lowerQuery.includes("modal") ? "Capital planning" : lowerQuery.includes("analisis") || lowerQuery.includes("analysis") ? "Market analysis" : "-", complete: /kompetitor|modal|analisis|analysis|kelayakan|feasibility/.test(lowerQuery) },
+    { label: language === "id" ? "Industri" : "Industry", value: detected.category.label, complete: detected.category.detected },
+    { label: language === "id" ? "Lokasi" : "Location", value: detected.location.label, complete: detected.location.detected },
+    { label: language === "id" ? "Pelanggan" : "Customer", value: detected.customers.label, complete: detected.customers.detected },
   ];
   const completedBrief = extractedBrief.filter((item) => item.complete).length;
+  const MIN_QUERY_LENGTH = 12;
+  const trimmedQuery = query.trim();
+  const tooShort = trimmedQuery.length > 0 && trimmedQuery.length < MIN_QUERY_LENGTH;
 
   const handleAsk = () => {
-    if (!query.trim()) return;
-    if (!clarifying && completedBrief < 4) { setClarifying(true); return; }
+    if (!trimmedQuery || tooShort) return;
+    if (!clarifying && completedBrief < extractedBrief.length) { setClarifying(true); return; }
     onSubmit(query);
   };
 
@@ -1467,7 +1597,7 @@ function HomeView({ onSubmit, onOpenReport, analysisCount, language }: { onSubmi
             </div>
           </div>
           <div className="p-5">
-            <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.055] p-4 focus-within:border-[#2A74C4]/70 focus-within:ring-4 focus-within:ring-[#2A74C4]/20">
+            <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.055] p-5 focus-within:border-[#2A74C4]/70 focus-within:ring-4 focus-within:ring-[#2A74C4]/20">
               <textarea
                 value={query} onChange={(e) => { setQuery(e.target.value); setClarifying(false); }}
                 placeholder={copy.dashboardPromptPlaceholder}
@@ -1504,7 +1634,11 @@ function HomeView({ onSubmit, onOpenReport, analysisCount, language }: { onSubmi
                   <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-warning/18 text-warning"><AlertTriangle size={15} /></span>
                   <div>
                     <p className="text-[13px] font-bold font-['Plus_Jakarta_Sans']">{language === "id" ? "Informasi kurang untuk analisis tajam." : "More information needed for sharper analysis."}</p>
-                    <p className="mt-1 text-[13px] leading-relaxed font-['Plus_Jakarta_Sans']">{language === "id" ? "Brief awal siap. Lengkapi pertanyaan wajib sebelum kuota dipakai." : "First brief ready. Complete required questions before quota is used."}</p>
+                    <p className="mt-1 text-[13px] leading-relaxed font-['Plus_Jakarta_Sans']">
+                      {completedBrief === 0
+                        ? (language === "id" ? "Belum ada detail yang terbaca dari kalimatmu. Lengkapi pertanyaan di bawah sebelum kuota dipakai." : "No details detected from your sentence yet. Complete the questions below before quota is used.")
+                        : (language === "id" ? "Brief awal siap sebagian. Lengkapi pertanyaan wajib sebelum kuota dipakai." : "First brief partially ready. Complete required questions before quota is used.")}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1513,10 +1647,15 @@ function HomeView({ onSubmit, onOpenReport, analysisCount, language }: { onSubmi
             <div className="mt-4 flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2 text-white/50">
                 <span className="flex size-7 items-center justify-center rounded-lg border border-white/10 bg-white/6"><MapPin size={13} /></span>
-                <span className="text-[12px] font-['Plus_Jakarta_Sans']">{clarifying ? (language === "id" ? "Ada detail yang perlu dilengkapi." : "Some details need completion.") : (language === "id" ? "Tidak ada isian wajib sebelum kirim." : "No required fields before submit.")}</span>
+                <span className="text-[12px] font-['Plus_Jakarta_Sans']">
+                  {tooShort
+                    ? (language === "id" ? `Tulis minimal ${MIN_QUERY_LENGTH} karakter, mis. jenis usaha + lokasi.` : `Write at least ${MIN_QUERY_LENGTH} characters, e.g. business type + location.`)
+                    : clarifying ? (language === "id" ? "Ada detail yang perlu dilengkapi." : "Some details need completion.")
+                    : (language === "id" ? "Tidak ada isian wajib sebelum kirim." : "No required fields before submit.")}
+                </span>
               </div>
               <button
-                onClick={handleAsk} disabled={!query.trim()}
+                onClick={handleAsk} disabled={!trimmedQuery || tooShort}
                 className="flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary px-5 text-[13px] font-semibold text-primary-foreground shadow-[0_14px_32px_rgba(42,116,196,0.24)] transition-[transform,background,box-shadow] hover:bg-secondary hover:text-secondary-foreground hover:shadow-[0_18px_42px_rgba(42,116,196,0.28)] active:scale-[0.98] disabled:opacity-40 font-['Plus_Jakarta_Sans']">
                 <Send size={14} /> {clarifying ? (language === "id" ? "Lengkapi informasi" : "Complete information") : copy.createBriefBtn}
               </button>
@@ -1551,7 +1690,7 @@ function HomeView({ onSubmit, onOpenReport, analysisCount, language }: { onSubmi
             </div>
             <div className="overflow-hidden rounded-2xl bg-white/[0.055] ring-1 ring-white/10 shadow-[0_18px_65px_rgba(0,0,0,0.28)]">
               {recentAnalyses.map((item, index) => (
-                <button key={item.topic} onClick={() => onOpenReport(item.topic)}
+                <button key={item.analysisId} onClick={() => onOpenReport(item)}
                   className={cn("group grid w-full grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 text-left transition-[background,transform] duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-[#2A74C4]/16 active:scale-[0.995] sm:grid-cols-[1fr_5.5rem_6rem]", index > 0 && "border-t border-white/10")}>
                   <div className="min-w-0">
                     <div className="mb-1 flex items-center gap-2">
@@ -1560,7 +1699,7 @@ function HomeView({ onSubmit, onOpenReport, analysisCount, language }: { onSubmi
                     </div>
                     <p className="truncate text-[13px] font-semibold text-white font-['Plus_Jakarta_Sans'] group-hover:text-[#9CC8EF]">{item.topic}</p>
                   </div>
-                  <span className={cn("hidden text-[12px] font-semibold sm:block", (item.sentiment === "Positif" || item.sentiment === "Positive") ? "text-success" : "text-warning")}>{item.sentiment}</span>
+                  <span className={cn("hidden text-[12px] font-semibold sm:block", item.sentiment === "positive" ? "text-success" : "text-warning")}>{item.sentiment ? SENTIMENT_LABEL[language][item.sentiment] : "-"}</span>
                   <span className="justify-self-end rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground font-mono">{item.score}/100</span>
                 </button>
               ))}
@@ -1572,21 +1711,159 @@ function HomeView({ onSubmit, onOpenReport, analysisCount, language }: { onSubmi
   );
 }
 
-const BRIEF_FIELDS = [
-  { label: "Industri", value: "F&B / kafe spesialti", confidence: 78 },
-  { label: "Lokasi", value: "Dago, Bandung", confidence: 84 },
-  { label: "Target pembeli", value: "Mahasiswa dan pekerja remote", confidence: 66 },
-  { label: "Modal awal", value: "Belum disebutkan", confidence: 0, missing: true, question: "Berapa rentang modal awal yang ingin dianalisis?", helper: "Masukkan angka kasar agar proyeksi risiko modal tidak menebak.", placeholder: "Contoh: Rp50-150 juta, termasuk renovasi dan stok awal", suggestions: ["< Rp50 juta", "Rp50-150 juta", "> Rp150 juta"] },
-  { label: "Waktu buka", value: "Belum disebutkan", confidence: 0, missing: true, question: "Kapan target bisnis ini mulai berjalan?", helper: "Timeline membantu agent membaca musim, momentum lokasi, dan tekanan kompetitor.", placeholder: "Contoh: 3 bulan lagi, sebelum semester baru", suggestions: ["1 bulan lagi", "3 bulan lagi", "Semester baru"] },
-];
+// Fields keyed by stable internal keys (not the localized display label --
+// label text changes with `language`, but the key must not, since it's also
+// how `answers` is stored/read and how businessInput.ts's buildBusinessInput
+// looks up clarification answers). `kind` picks which input widget
+// BriefReviewView renders: "text" is a free-text textarea (industry/
+// location/customers still need natural language), "budget" and "timing"
+// are constrained pill/native-date-input widgets instead of free text --
+// deliberately, since a raw textarea answer is the most direct
+// prompt-injection surface in this whole flow (it flows straight into the
+// LLM-facing description). See businessInput.ts's BUDGET_OPTIONS/
+// resolveBudgetRange/describeTiming for how those safe codes get decoded.
+type BriefFieldDef = {
+  key: string; label: string; value: string; missing: boolean;
+  question?: string; placeholder?: string; kind: "text" | "budget" | "timing";
+};
 
-function BriefReviewView({ query, onConfirm, onBack, language }: { query: string; onConfirm: (extraContext: string) => void; onBack: () => void; language: Language }) {
+function briefFieldsFor(query: string, language: Language): BriefFieldDef[] {
+  const detected = detectBrief(query, language);
+  const id = language === "id";
+  return [
+    {
+      key: "industry", label: id ? "Industri" : "Industry",
+      value: detected.category.label, missing: !detected.category.detected,
+      question: id ? "Bisnis ini bergerak di industri apa?" : "What industry is this business in?",
+      placeholder: id ? "Contoh: kedai kopi, laundry, bimbel" : "e.g. coffee shop, laundry, tutoring",
+      kind: "text",
+    },
+    {
+      key: "location", label: id ? "Lokasi" : "Location",
+      value: detected.location.label, missing: !detected.location.detected,
+      question: id ? "Di kota/kecamatan mana bisnis ini akan berjalan?" : "Which city/district will this business operate in?",
+      placeholder: id ? "Contoh: Kecamatan Cimanggis, Kota Depok" : "e.g. Cimanggis district, Depok city",
+      kind: "text",
+    },
+    {
+      key: "customers", label: id ? "Target pembeli" : "Target customers",
+      value: detected.customers.label, missing: !detected.customers.detected,
+      question: id ? "Siapa target pembeli utama bisnis ini?" : "Who are the main target customers?",
+      placeholder: id ? "Contoh: mahasiswa, keluarga, pekerja kantoran" : "e.g. students, families, office workers",
+      kind: "text",
+    },
+    {
+      key: "budget", label: id ? "Modal awal" : "Initial budget",
+      value: id ? "Belum disebutkan" : "Not specified", missing: true,
+      question: id ? "Berapa rentang modal awal yang ingin dianalisis?" : "What initial budget range should be analyzed?",
+      placeholder: undefined,
+      kind: "budget",
+    },
+    {
+      key: "timing", label: id ? "Waktu buka" : "Opening timeline",
+      value: id ? "Belum disebutkan" : "Not specified", missing: true,
+      question: id ? "Kapan target bisnis ini mulai berjalan?" : "When is this business targeted to open?",
+      placeholder: undefined,
+      kind: "timing",
+    },
+  ];
+}
+
+function isFieldAnswered(field: BriefFieldDef, answers: Record<string, string>): boolean {
+  const v = (answers[field.key] || "").trim();
+  if (field.kind === "budget") return v.length > 0; // any pill (incl. "undisclosed") or a valid custom amount
+  if (field.kind === "timing") return /^\d{4}-\d{2}(-\d{2})?$/.test(v);
+  return v.length >= 3;
+}
+
+function chipValueFor(field: BriefFieldDef, answers: Record<string, string>, language: Language): string {
+  const v = answers[field.key];
+  if (!v) return field.value;
+  if (field.kind === "budget") return formatBudgetLabel(v, language) || field.value;
+  if (field.kind === "timing") return formatTimingLabel(v, language) || field.value;
+  return v;
+}
+
+// Budget/timing are the two clarification fields most directly wired into
+// the LLM-facing description, so they're the ones deliberately restricted
+// to pill buttons + native browser inputs instead of a free-text textarea --
+// the value can literally never be anything other than a known enum, a
+// validated number, or a browser-validated date string, closing off that
+// field as a prompt-injection vector. (The other fields -- the main brief
+// text, industry/location/customers -- stay free text; a full defense
+// would also need care in how ml/agents.py builds prompts server-side.)
+function BudgetPicker({ value, onChange, language }: { value: string; onChange: (v: string) => void; language: Language }) {
+  const isCustom = value.startsWith("custom:");
+  const [customOpen, setCustomOpen] = useState(isCustom);
+  const customAmount = isCustom ? value.slice(7) : "";
+  return (
+    <div className="mt-3 space-y-2">
+      <div className="flex flex-wrap gap-2" role="group" aria-label={language === "id" ? "Pilih rentang modal awal" : "Choose initial budget range"}>
+        {BUDGET_OPTIONS.map((opt) => (
+          <button key={opt.value} type="button" aria-pressed={value === opt.value}
+            onClick={() => { setCustomOpen(false); onChange(opt.value); }}
+            className={cn("rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-all",
+              value === opt.value ? "border-primary bg-primary text-primary-foreground" : "border-white/15 bg-white/[0.06] text-white/75 hover:border-white/30")}>
+            {language === "id" ? opt.labelId : opt.labelEn}
+          </button>
+        ))}
+        <button type="button" aria-pressed={isCustom}
+          onClick={() => setCustomOpen(true)}
+          className={cn("rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-all",
+            isCustom || customOpen ? "border-primary bg-primary/20 text-white" : "border-white/15 bg-white/[0.06] text-white/75 hover:border-white/30")}>
+          {language === "id" ? "Angka spesifik" : "Specific amount"}
+        </button>
+      </div>
+      {(customOpen || isCustom) && (
+        <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.08] px-3 py-2">
+          <span className="text-[12px] text-white/55 font-['Plus_Jakarta_Sans']">Rp</span>
+          <input
+            type="number" min={0} max={100000} step={1} inputMode="numeric"
+            value={customAmount}
+            onChange={(e) => onChange(e.target.value ? `custom:${e.target.value}` : "")}
+            placeholder={language === "id" ? "mis. 75" : "e.g. 75"}
+            aria-label={language === "id" ? "Modal awal dalam juta rupiah" : "Initial budget in million rupiah"}
+            className="w-24 bg-transparent text-sm text-white outline-none placeholder:text-white/35 font-['Plus_Jakarta_Sans']"
+          />
+          <span className="text-[12px] text-white/55 font-['Plus_Jakarta_Sans']">{language === "id" ? "juta" : "million IDR"}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TimingPicker({ value, onChange, language }: { value: string; onChange: (v: string) => void; language: Language }) {
+  const [mode, setMode] = useState<"month" | "date">(value.length === 10 ? "date" : "month");
+  const today = new Date().toISOString().slice(0, mode === "month" ? 7 : 10);
+  return (
+    <div className="mt-3 space-y-2">
+      <div className="flex gap-2" role="group" aria-label={language === "id" ? "Pilih granularitas tanggal" : "Choose date granularity"}>
+        {(["month", "date"] as const).map((m) => (
+          <button key={m} type="button" aria-pressed={mode === m}
+            onClick={() => { setMode(m); onChange(""); }}
+            className={cn("rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-all",
+              mode === m ? "border-primary bg-primary text-primary-foreground" : "border-white/15 bg-white/[0.06] text-white/75 hover:border-white/30")}>
+            {m === "month" ? (language === "id" ? "Bulan & tahun" : "Month & year") : (language === "id" ? "Tanggal spesifik" : "Specific date")}
+          </button>
+        ))}
+      </div>
+      <input
+        type={mode} value={value} min={today}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label={language === "id" ? "Target mulai berjalan" : "Target launch date"}
+        className="w-full rounded-xl border border-white/10 bg-white/[0.08] px-4 py-2.5 text-sm text-white outline-none transition-colors focus:border-[#6EA8D8] focus:ring-2 focus:ring-[#6EA8D8]/35 [color-scheme:dark] font-['Plus_Jakarta_Sans']"
+      />
+    </div>
+  );
+}
+
+function BriefReviewView({ query, onConfirm, onBack, language }: { query: string; onConfirm: (answers: Record<string, string>) => void; onBack: () => void; language: Language }) {
   const copy = UI_COPY[language];
-  const missing = BRIEF_FIELDS.filter((field) => field.missing);
+  const briefFields = briefFieldsFor(query, language);
+  const missing = briefFields.filter((field) => field.missing);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const allAnswered = missing.every((field) => (answers[field.label] || "").trim().length >= 3);
-  const extraContext = missing.map((field) => `${field.label}: ${(answers[field.label] || "").trim()}`).join("\n");
-  const answeredCount = missing.filter((field) => (answers[field.label] || "").trim().length >= 3).length;
+  const allAnswered = missing.every((field) => isFieldAnswered(field, answers));
+  const answeredCount = missing.filter((field) => isFieldAnswered(field, answers)).length;
   const progressPct = Math.round((answeredCount / missing.length) * 100);
 
   return (
@@ -1610,14 +1887,14 @@ function BriefReviewView({ query, onConfirm, onBack, language }: { query: string
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            {BRIEF_FIELDS.map((field) => (
-              <div key={field.label} className={cn("rounded-2xl p-4 ring-1", field.missing ? "bg-warning/10 text-foreground ring-warning/35" : "bg-background text-foreground ring-border")}>
+            {briefFields.map((field) => (
+              <div key={field.key} className={cn("rounded-2xl p-4 ring-1", field.missing ? "bg-warning/10 text-foreground ring-warning/35" : "bg-background text-foreground ring-border")}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-medium text-muted-foreground font-['Plus_Jakarta_Sans']">{field.label}</p>
-                    <p className="mt-1 text-sm font-semibold font-['Plus_Jakarta_Sans']">{field.value}</p>
+                    <p className="mt-1 text-sm font-semibold font-['Plus_Jakarta_Sans']">{field.missing ? chipValueFor(field, answers, language) : field.value}</p>
                   </div>
-                  <span className={cn("rounded-full px-2 py-1 text-[11px] font-semibold font-mono", field.missing ? "bg-warning/15 text-warning" : "bg-primary/10 text-primary")}>{field.missing ? "Perlu" : `${field.confidence}%`}</span>
+                  <span className={cn("rounded-full px-2 py-1 text-[11px] font-semibold font-mono", field.missing ? "bg-warning/15 text-warning" : "bg-primary/10 text-primary")}>{field.missing ? (language === "id" ? "Perlu" : "Needed") : (language === "id" ? "Terdeteksi" : "Detected")}</span>
                 </div>
               </div>
             ))}
@@ -1632,23 +1909,31 @@ function BriefReviewView({ query, onConfirm, onBack, language }: { query: string
           </div>
 
           <div className="mt-5 space-y-4">
-            {missing.map((field, index) => (
-              <label key={field.label} className="block rounded-2xl bg-white/[0.06] p-4 ring-1 ring-white/10">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9CC8EF] font-mono">{language === "id" ? "Pertanyaan" : "Question"} {index + 1}</span>
-                <span className="mt-2 block text-sm font-semibold text-white font-['Plus_Jakarta_Sans']">{field.question}</span>
-                <textarea
-                  value={answers[field.label] || ""}
-                  onChange={(event) => setAnswers((current) => ({ ...current, [field.label]: event.target.value }))}
-                  placeholder={field.placeholder}
-                  rows={3}
-                  className="mt-3 w-full resize-none rounded-2xl border border-white/10 bg-white/[0.08] px-4 py-3 text-sm leading-relaxed text-white placeholder:text-white/35 outline-none transition-colors focus:border-[#6EA8D8] focus:ring-2 focus:ring-[#6EA8D8]/35 font-['Plus_Jakarta_Sans']"
-                />
-              </label>
-            ))}
+            {missing.map((field, index) => {
+              const setAnswer = (v: string) => setAnswers((current) => ({ ...current, [field.key]: v }));
+              return (
+                <div key={field.key} className="block rounded-2xl bg-white/[0.06] p-4 ring-1 ring-white/10">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9CC8EF] font-mono">{language === "id" ? "Pertanyaan" : "Question"} {index + 1}</span>
+                  <span className="mt-2 block text-sm font-semibold text-white font-['Plus_Jakarta_Sans']">{field.question}</span>
+                  {field.kind === "budget" && <BudgetPicker value={answers[field.key] || ""} onChange={setAnswer} language={language} />}
+                  {field.kind === "timing" && <TimingPicker value={answers[field.key] || ""} onChange={setAnswer} language={language} />}
+                  {field.kind === "text" && (
+                    <textarea
+                      value={answers[field.key] || ""}
+                      onChange={(event) => setAnswer(event.target.value)}
+                      placeholder={field.placeholder}
+                      rows={3}
+                      maxLength={200}
+                      className="mt-3 w-full resize-none rounded-2xl border border-white/10 bg-white/[0.08] px-4 py-3 text-sm leading-relaxed text-white placeholder:text-white/35 outline-none transition-colors focus:border-[#6EA8D8] focus:ring-2 focus:ring-[#6EA8D8]/35 font-['Plus_Jakarta_Sans']"
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           <div className="mt-auto grid gap-3 pt-6">
-            <button disabled={!allAnswered} onClick={() => onConfirm(extraContext)} className={cn("min-h-12 rounded-full px-5 text-sm font-semibold transition-[transform,background,opacity] duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70", allAnswered ? "bg-white text-secondary hover:bg-primary/10 active:scale-[0.98]" : "cursor-not-allowed bg-white/12 text-white/35") }>
+            <button disabled={!allAnswered} onClick={() => onConfirm(answers)} className={cn("min-h-12 rounded-full px-5 text-sm font-semibold transition-[transform,background,opacity] duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70", allAnswered ? "bg-white text-secondary hover:bg-primary/10 active:scale-[0.98]" : "cursor-not-allowed bg-white/12 text-white/35") }>
               {language === "id" ? "Lanjut ke agent processing" : "Continue to agent processing"}
             </button>
             <button onClick={onBack} className="min-h-11 rounded-full px-5 text-sm font-semibold text-white/70 ring-1 ring-white/15 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
@@ -1669,7 +1954,58 @@ const AGENT_STEPS = [
   { id: 4, name: "Menyusun rekomendasi dan risiko", desc: "Mengubah bukti menjadi prioritas, asumsi lemah, mitigasi, dan rencana 90 hari.", icon: FileText, time: "~35 detik" },
 ];
 
-function ProcessingView({ query, onComplete, language }: { query: string; onComplete: () => void; language: Language }) {
+// Maps the real backend AnalysisStatus (11 values) onto the 4 visual steps
+// above -- COMPLETED/PARTIAL/FAILED all map past the last step since they're
+// handled separately (onComplete() / the failure banner below).
+const STATUS_TO_STEP: Record<AnalysisStatus, number> = {
+  awaiting_confirmation: 0, confirmed: 0, scraping: 0, routing: 0,
+  preprocessing: 1, indexing: 1,
+  analyzing: 2,
+  composing: 3,
+  completed: 4, partial: 4, failed: 4,
+};
+
+// The 4 visual steps above are a UI simplification; this map surfaces the
+// real backend stage name (all 7 in-progress AnalysisStatus values, not
+// bucketed) so the current-stage line under the progress bar always
+// reflects exactly what the pipeline is doing right now, not just which of
+// the 4 buckets it's roughly in.
+const STAGE_LABEL: Record<Language, Partial<Record<AnalysisStatus, string>>> = {
+  id: {
+    awaiting_confirmation: "Menunggu konfirmasi",
+    confirmed: "Memulai proses analisis",
+    scraping: "Mengambil data dari sumber publik (Google Maps, media sosial, berita)",
+    routing: "Menyaring & mengklasifikasikan data yang relevan",
+    preprocessing: "Memproses data menjadi potongan siap analisis",
+    indexing: "Mengindeks data untuk pencarian semantik",
+    analyzing: "Menjalankan analisis sentimen & SWOT dengan AI",
+    composing: "Menyusun laporan akhir",
+  },
+  en: {
+    awaiting_confirmation: "Waiting for confirmation",
+    confirmed: "Starting analysis",
+    scraping: "Pulling data from public sources (Google Maps, social media, news)",
+    routing: "Filtering & classifying relevant data",
+    preprocessing: "Turning data into analysis-ready chunks",
+    indexing: "Indexing data for semantic search",
+    analyzing: "Running sentiment & SWOT analysis with AI",
+    composing: "Composing the final report",
+  },
+};
+
+// If the backend never reaches a terminal state (a hung scraper, a dead
+// LLM call, a lost job on server restart -- see backend/main.py's
+// asyncio.create_task TODO(arq)), polling would otherwise continue forever
+// with no escape hatch. 3 minutes is well past the wait-time notice's
+// "a few minutes" framing, so past this point it genuinely looks stuck
+// rather than just slow.
+const PROCESSING_STUCK_TIMEOUT_MS = 3 * 60 * 1000;
+
+function ProcessingView({ query, onComplete, onRetry, onCancel, language, analysisId, submitError }: {
+  query: string; onComplete: () => void; onRetry: () => void; onCancel: () => void;
+  language: Language; analysisId: string | null;
+  submitError?: string | null;
+}) {
   const copy = UI_COPY[language];
   const agentSteps = language === "id" ? AGENT_STEPS : [
     { id: 1, name: "Collecting local market signals", desc: "Reading public sources: Google Maps, marketplaces, social media, and industry news.", icon: Globe, time: "~45 sec" },
@@ -1677,20 +2013,58 @@ function ProcessingView({ query, onComplete, language }: { query: string; onComp
     { id: 3, name: "Comparing competitors", desc: "Mapping nearby players, relative strengths, and open differentiation gaps.", icon: Target, time: "~40 sec" },
     { id: 4, name: "Preparing risks and recommendations", desc: "Turning evidence into priorities, weak assumptions, mitigation, and a 90-day plan.", icon: FileText, time: "~35 sec" },
   ];
-  const [step, setStep] = useState(0);
   const [showTech, setShowTech] = useState(false);
+  const [statusResp, setStatusResp] = useState<AnalysisStatusResponse | null>(null);
+  const [pollError, setPollError] = useState<string | null>(null);
+  const [stuck, setStuck] = useState(false);
 
   useEffect(() => {
-    if (step < agentSteps.length) {
-      const t = setTimeout(() => setStep(s => s + 1), 1800);
-      return () => clearTimeout(t);
-    } else {
-      const t = setTimeout(onComplete, 800);
-      return () => clearTimeout(t);
-    }
-  }, [step, onComplete]);
+    if (!analysisId) return;
+    setStuck(false);
+    const t = setTimeout(() => setStuck(true), PROCESSING_STUCK_TIMEOUT_MS);
+    return () => clearTimeout(t);
+  }, [analysisId]);
 
-  const pct = Math.round((step / agentSteps.length) * 100);
+  useEffect(() => {
+    if (!analysisId) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+
+    const poll = async () => {
+      try {
+        const resp = await api.getStatus(analysisId);
+        if (cancelled) return;
+        setStatusResp(resp);
+        if (resp.status === "failed") {
+          setPollError(resp.error || (language === "id" ? "Analisis gagal diproses." : "Analysis failed to process."));
+          return;
+        }
+        if (TERMINAL_STATUSES.includes(resp.status)) {
+          onComplete();
+          return;
+        }
+        timer = setTimeout(poll, 2500);
+      } catch (e) {
+        if (!cancelled) setPollError(e instanceof Error ? e.message : String(e));
+      }
+    };
+    poll();
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [analysisId, onComplete, language]);
+
+  const step = statusResp ? STATUS_TO_STEP[statusResp.status] : 0;
+  const pct = statusResp?.progress.pct ?? 0;
+  const displayError = submitError || pollError;
+
+  if (displayError) {
+    return (
+      <div className="min-h-full flex flex-col items-center justify-center px-6 py-10 text-center">
+        <span className="mb-4 flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive"><AlertTriangle size={22} /></span>
+        <p className="mb-2 text-lg font-bold font-['Plus_Jakarta_Sans'] text-foreground">{language === "id" ? "Analisis gagal" : "Analysis failed"}</p>
+        <p className="max-w-md text-sm text-muted-foreground font-['Plus_Jakarta_Sans']">{displayError}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full flex flex-col">
@@ -1702,10 +2076,43 @@ function ProcessingView({ query, onComplete, language }: { query: string; onComp
 
       <div className="max-w-2xl mx-auto px-6 md:px-8 py-10 w-full flex-1">
         {/* Topic */}
-        <div className="bg-card rounded-xl border border-border p-4 mb-8">
+        <div className="bg-card rounded-xl border border-border p-4 mb-4">
           <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-['Plus_Jakarta_Sans'] mb-1">{language === "id" ? "Topik Analisis" : "Analysis Topic"}</p>
           <p className="text-[15px] font-semibold font-['Plus_Jakarta_Sans'] text-foreground">{query || REPORT_DATA[language].topic}</p>
         </div>
+
+        {/* Wait-time notice -- the real pipeline (live scraping + sequential
+            LLM calls per review/chunk) genuinely takes several minutes, not
+            seconds. Said upfront so it doesn't read as stuck/broken. */}
+        <div className="mb-8 flex items-start gap-2.5 rounded-xl border border-primary/20 bg-primary/5 p-3.5">
+          <Activity size={15} className="mt-0.5 shrink-0 text-primary" />
+          <p className="text-[12px] leading-relaxed text-foreground/75 font-['Plus_Jakarta_Sans']">
+            {language === "id"
+              ? "Proses ini mengambil data asli dari internet lalu dianalisis AI selangkah demi selangkah, jadi bisa memakan waktu beberapa menit. Halaman ini boleh dibiarkan terbuka sampai selesai."
+              : "This pulls real data from the web and runs it through AI analysis step by step, so it can take a few minutes. Feel free to leave this page open until it finishes."}
+          </p>
+        </div>
+
+        {stuck && (
+          <div className="mb-8 flex flex-col gap-3 rounded-xl border border-warning/30 bg-warning/10 p-3.5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle size={15} className="mt-0.5 shrink-0 text-warning" />
+              <p className="text-[12px] leading-relaxed text-foreground/80 font-['Plus_Jakarta_Sans']">
+                {language === "id"
+                  ? "Ini lebih lama dari biasanya. Kamu bisa terus menunggu, atau coba lagi."
+                  : "This is taking longer than usual. You can keep waiting, or try again."}
+              </p>
+            </div>
+            <div className="flex shrink-0 gap-2 self-end sm:self-auto">
+              <button onClick={onRetry} className="rounded-lg border border-border bg-card px-3 py-1.5 text-[12px] font-semibold text-foreground hover:bg-muted transition-all font-['Plus_Jakarta_Sans']">
+                {language === "id" ? "Coba lagi" : "Try again"}
+              </button>
+              <button onClick={onCancel} className="rounded-lg border border-border px-3 py-1.5 text-[12px] font-medium text-muted-foreground hover:bg-muted transition-all font-['Plus_Jakarta_Sans']">
+                {language === "id" ? "Kembali" : "Back"}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Progress */}
         <div className="mb-6">
@@ -1716,6 +2123,16 @@ function ProcessingView({ query, onComplete, language }: { query: string; onComp
           <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
             <div className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
           </div>
+          <p className="mt-2.5 flex items-center gap-1.5 text-[12px] text-muted-foreground font-['Plus_Jakarta_Sans']">
+            <span className="relative flex size-1.5 shrink-0" aria-hidden="true">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/60" />
+              <span className="relative inline-flex size-1.5 rounded-full bg-primary" />
+            </span>
+            {language === "id" ? "Tahap saat ini: " : "Current stage: "}
+            <span className="font-medium text-foreground">
+              {STAGE_LABEL[language][statusResp?.status ?? "confirmed"] ?? (language === "id" ? "Memulai..." : "Starting...")}
+            </span>
+          </p>
         </div>
 
         <ReportSkeleton language={language} />
@@ -1767,9 +2184,9 @@ function ProcessingView({ query, onComplete, language }: { query: string; onComp
             <div className="px-4 pb-4 grid grid-cols-2 md:grid-cols-4 gap-3 border-t border-border pt-4">
               {[
                 { label: "GPU", val: "AMD MI300X" },
-                { label: "Model", val: "Qwen3-235B" },
-                { label: "VRAM", val: "192 GB HBM3" },
-                { label: "Precision", val: "BF16 / INT4" },
+                { label: language === "id" ? "Model (sentimen)" : "Model (sentiment)", val: "gpt-oss-120b" },
+                { label: language === "id" ? "Model (SWOT/ringkasan)" : "Model (SWOT/summary)", val: "deepseek-v4-pro" },
+                { label: "Provider", val: "Fireworks AI" },
               ].map(({ label, val }) => (
                 <div key={label} className="bg-background rounded-lg p-3 text-center">
                   <p className="text-[11px] text-[13px] font-bold font-mono text-foreground">{val}</p>
@@ -1785,14 +2202,21 @@ function ProcessingView({ query, onComplete, language }: { query: string; onComp
 }
 
 // ─── Report (two-panel desktop layout) ───────────────────────────────────────
-function ReportView({ query, onBack, onNavigate, language }: {
+function ReportView({ query, onBack, onNavigate, language, viewModel }: {
   query: string; onBack: () => void; onNavigate: (s: Screen) => void; language: Language;
+  viewModel?: ReportViewModel | null;
 }) {
   const copy = UI_COPY[language];
   const [openSwot, setOpenSwot] = useState(true);
   const [expandedClaims, setExpandedClaims] = useState<number[]>([]);
-  const r = REPORT_DATA[language];
-  const dataPoints = language === "id" ? "2.847" : "2,847";
+  const r = viewModel ?? REPORT_DATA[language];
+  const isReal = !!viewModel;
+  const dataPoints = viewModel ? String(viewModel.competitors.length) : (language === "id" ? "2.847" : "2,847");
+  const summaryText = viewModel ? viewModel.executiveSummary : copy.summaryDesc;
+  const degradationNotes = viewModel ? viewModel.degradationNotes : [];
+  const avgConfidence = viewModel && viewModel.claims.length > 0
+    ? Math.round(viewModel.claims.reduce((s, c) => s + c.conf, 0) / viewModel.claims.length)
+    : 86;
 
   const sentimentData = [
     { name: SENTIMENT_LABEL[language].positive, value: r.sentimentPos, color: "#2F735F" },
@@ -1805,7 +2229,7 @@ function ReportView({ query, onBack, onNavigate, language }: {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-card border-b border-border px-6 md:px-8 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3 min-w-0">
-          <button onClick={onBack} className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-muted transition-colors shrink-0">
+          <button onClick={onBack} className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-muted transition-colors shrink-0 print:hidden">
             <ChevronLeft size={16} />
           </button>
           <div className="min-w-0">
@@ -1813,7 +2237,7 @@ function ReportView({ query, onBack, onNavigate, language }: {
             <p className="text-sm font-semibold font-['Plus_Jakarta_Sans'] text-foreground truncate max-w-xs md:max-w-lg">{query || r.topic}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 print:hidden">
           <button onClick={() => onNavigate("fullreport")} className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-border text-[13px] font-['Plus_Jakarta_Sans'] font-medium text-foreground hover:bg-muted transition-all">
             <FileText size={14} /> {copy.fullReport}
           </button>
@@ -1823,7 +2247,7 @@ function ReportView({ query, onBack, onNavigate, language }: {
           <button onClick={() => onNavigate("home")} className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-border text-[13px] font-['Plus_Jakarta_Sans'] font-medium text-foreground hover:bg-muted transition-all">
             <FileText size={14} /> {copy.newAnalysis}
           </button>
-          <button aria-label={language === "id" ? "Unduh ringkasan laporan" : "Download report summary"} className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <button onClick={() => window.print()} aria-label={language === "id" ? "Unduh ringkasan laporan" : "Download report summary"} className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring print:hidden">
             <Download size={15} />
           </button>
         </div>
@@ -1857,29 +2281,52 @@ function ReportView({ query, onBack, onNavigate, language }: {
                 <span className="flex size-8 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary"><FileText size={15} /></span>
                 <h3 className="text-[13px] font-bold text-foreground font-['Plus_Jakarta_Sans']">{copy.summaryTitle}</h3>
               </div>
-              <span className="rounded-full border border-success/25 bg-success/10 px-2.5 py-1 text-[11px] font-semibold text-success font-mono">{language === "id" ? "5 klaim · 86%" : "5 claims · 86%"}</span>
+              {(!viewModel || r.claims.length > 0) && (
+                <span className="rounded-full border border-success/25 bg-success/10 px-2.5 py-1 text-[11px] font-semibold text-success font-mono">
+                  {r.claims.length || 5} {language === "id" ? "klaim" : "claims"} · {avgConfidence}%
+                </span>
+              )}
             </div>
             <p className="text-[14px] leading-relaxed text-foreground/82 font-['Plus_Jakarta_Sans']">
-              {copy.summaryDesc}
+              {summaryText}
             </p>
           </div>
 
-          {/* Sentiment trend */}
-          <div className="bg-card rounded-xl border border-border p-5">
-            <h3 className="text-[13px] font-bold font-['Plus_Jakarta_Sans'] text-foreground uppercase tracking-wide mb-4 flex items-center gap-2">
-              <TrendingUp size={15} className="text-primary" /> {copy.sentimentTrendTitle}
-            </h3>
-            <p className="sr-only">{language === "id" ? "Tren sentimen enam bulan: sentimen positif naik dari 62% pada Januari menjadi 74% pada Juni, sementara sentimen negatif turun dari 18% menjadi 10%." : "Six-month sentiment trend: positive sentiment rose from 62% in January to 74% in June, while negative sentiment fell from 18% to 10%."}</p>
-            <ResponsiveContainer width="100%" height={180}>
-              <LineChart data={r.sentimentTrend}>
-                <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: "JetBrains Mono" }} />
-                <YAxis tick={{ fontSize: 11, fontFamily: "JetBrains Mono" }} domain={[0, 100]} />
-                <Tooltip contentStyle={{ fontSize: 12, fontFamily: "Manrope", borderRadius: 8, border: "1px solid #e2e8f2" }} />
-                <Line type="monotone" dataKey="pos" stroke="var(--success)" strokeWidth={2} dot={{ r: 3 }} name={`${SENTIMENT_LABEL[language].positive} %`} />
-                <Line type="monotone" dataKey="neg" stroke="var(--destructive)" strokeWidth={2} dot={{ r: 3 }} name={`${SENTIMENT_LABEL[language].negative} %`} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          {/* Degradation notes -- only shown for real reports where 1+ source degraded */}
+          {isReal && degradationNotes.length > 0 && (
+            <div className="rounded-[1.4rem] border border-warning/35 bg-warning/10 p-4">
+              <div className="mb-2 flex items-center gap-2">
+                <AlertTriangle size={15} className="text-warning" />
+                <p className="text-[12px] font-bold font-['Plus_Jakarta_Sans'] text-foreground">{language === "id" ? "Beberapa sumber terdegradasi" : "Some sources degraded"}</p>
+              </div>
+              <ul className="space-y-1">
+                {degradationNotes.map((note, i) => (
+                  <li key={i} className="text-[12px] text-muted-foreground font-['Plus_Jakarta_Sans']">· {note}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Sentiment trend -- no time-series data exists on the real backend
+              Report (MVP scope), so this whole card is skipped rather than
+              showing an empty chart shell when viewModel is real. */}
+          {r.sentimentTrend.length > 0 && (
+            <div className="bg-card rounded-xl border border-border p-5">
+              <h3 className="text-[13px] font-bold font-['Plus_Jakarta_Sans'] text-foreground uppercase tracking-wide mb-4 flex items-center gap-2">
+                <TrendingUp size={15} className="text-primary" /> {copy.sentimentTrendTitle}
+              </h3>
+              <p className="sr-only">{language === "id" ? "Tren sentimen enam bulan: sentimen positif naik dari 62% pada Januari menjadi 74% pada Juni, sementara sentimen negatif turun dari 18% menjadi 10%." : "Six-month sentiment trend: positive sentiment rose from 62% in January to 74% in June, while negative sentiment fell from 18% to 10%."}</p>
+              <ResponsiveContainer width="100%" height={180}>
+                <LineChart data={r.sentimentTrend}>
+                  <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: "JetBrains Mono" }} />
+                  <YAxis tick={{ fontSize: 11, fontFamily: "JetBrains Mono" }} domain={[0, 100]} />
+                  <Tooltip contentStyle={{ fontSize: 12, fontFamily: "Manrope", borderRadius: 8, border: "1px solid #e2e8f2" }} />
+                  <Line type="monotone" dataKey="pos" stroke="var(--success)" strokeWidth={2} dot={{ r: 3 }} name={`${SENTIMENT_LABEL[language].positive} %`} />
+                  <Line type="monotone" dataKey="neg" stroke="var(--destructive)" strokeWidth={2} dot={{ r: 3 }} name={`${SENTIMENT_LABEL[language].negative} %`} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
 
           {/* SWOT */}
           <div className="bg-card rounded-xl border border-border overflow-hidden">
@@ -1977,9 +2424,9 @@ function ReportView({ query, onBack, onNavigate, language }: {
               <div className="grid grid-cols-2 gap-2.5">
                 {[
                   { label: copy.marketViabilityScore, val: `${r.overallScore}/100`, icon: CircleDot },
-                  { label: copy.competitor, val: copy.activeCompetitorsCount, icon: Users },
+                  { label: copy.competitor, val: viewModel ? `${r.competitors.length} ${language === "id" ? "aktif" : "active"}` : copy.activeCompetitorsCount, icon: Users },
                   { label: "Data Points", val: dataPoints, icon: Activity },
-                  { label: copy.confidence, val: "86%", icon: Shield },
+                  { label: copy.confidence, val: `${avgConfidence}%`, icon: Shield },
                 ].map(({ label, val, icon: Icon }) => (
                   <div key={label} className="rounded-xl border border-border bg-background p-3">
                     <div className="mb-2 flex size-7 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
@@ -2011,7 +2458,7 @@ function ReportView({ query, onBack, onNavigate, language }: {
             </div>
 
             {/* Actions */}
-            <div className="space-y-2">
+            <div className="space-y-2 print:hidden">
               <button onClick={() => onNavigate("fullreport")} className="w-full py-3 rounded-xl border border-border text-[13px] font-['Plus_Jakarta_Sans'] font-semibold text-foreground hover:bg-muted transition-all flex items-center justify-center gap-2">
                 <FileText size={15} /> {copy.viewFullReportShort}
               </button>
@@ -2043,13 +2490,18 @@ const FR_SECTIONS: Record<Language, string[]> = {
   ],
 };
 
-function FullReportView({ query, onBack, onSlideDeck, language }: { query: string; onBack: () => void; onSlideDeck: () => void; language: Language }) {
+function FullReportView({ query, onBack, onSlideDeck, language, viewModel }: {
+  query: string; onBack: () => void; onSlideDeck: () => void; language: Language;
+  viewModel?: ReportViewModel | null;
+}) {
   const copy = UI_COPY[language];
   const [open, setOpen] = useState<number[]>([0, 1]);
   const [activeSection, setActiveSection] = useState(0);
-  const r = REPORT_DATA[language];
+  const r = viewModel ?? REPORT_DATA[language];
+  const isReal = !!viewModel;
   const sections = FR_SECTIONS[language];
-  const dataPoints = language === "id" ? "2.847" : "2,847";
+  const dataPoints = viewModel ? String(viewModel.competitors.length) : (language === "id" ? "2.847" : "2,847");
+  const summaryText = viewModel?.executiveSummary;
 
   const toggle = (i: number) => setOpen(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i]);
 
@@ -2059,10 +2511,19 @@ function FullReportView({ query, onBack, onSlideDeck, language }: { query: strin
     { name: SENTIMENT_LABEL[language].negative, value: r.sentimentNeg, color: "#A23F2F" },
   ];
 
+  const downloadPdf = () => {
+    // Collapsed accordion sections aren't in the DOM at all (conditional
+    // render, not just CSS-hidden), so printing as-is would silently drop
+    // whichever sections the user hadn't expanded. Force everything open
+    // first, then print once that's actually rendered.
+    setOpen(sections.map((_, i) => i));
+    requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+  };
+
   return (
     <div className="min-h-full flex flex-col">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-[#0D1829] text-white px-6 md:px-8 py-3.5 flex items-center gap-3">
+      <div className="sticky top-0 z-10 bg-[#0D1829] text-white px-6 md:px-8 py-3.5 flex items-center gap-3 print:hidden">
         <button onClick={onBack} className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
           <ChevronLeft size={16} />
         </button>
@@ -2074,7 +2535,7 @@ function FullReportView({ query, onBack, onSlideDeck, language }: { query: strin
           <button onClick={onSlideDeck} className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/10 text-white text-[13px] font-['Plus_Jakarta_Sans'] font-medium hover:bg-white/20 transition-all">
             <Layers size={14} /> {copy.slideDeck}
           </button>
-          <button className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary text-primary-foreground text-[13px] font-['Plus_Jakarta_Sans'] font-medium hover:bg-primary transition-all">
+          <button onClick={downloadPdf} className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary text-primary-foreground text-[13px] font-['Plus_Jakarta_Sans'] font-medium hover:bg-primary transition-all">
             <Download size={14} /> {copy.downloadPdf}
           </button>
         </div>
@@ -2082,7 +2543,7 @@ function FullReportView({ query, onBack, onSlideDeck, language }: { query: strin
 
       <div className="flex flex-1">
         {/* TOC sidebar */}
-        <div className="hidden xl:flex flex-col w-56 shrink-0 sticky top-[57px] h-[calc(100vh-57px)] overflow-auto border-r border-border bg-background">
+        <div className="hidden xl:flex flex-col w-56 shrink-0 sticky top-[57px] h-[calc(100vh-57px)] overflow-auto border-r border-border bg-background print:hidden">
           <div className="p-5">
             <p className="text-[10px] font-bold font-['Plus_Jakarta_Sans'] uppercase tracking-widest text-muted-foreground mb-3">{copy.tableOfContents}</p>
             <nav className="space-y-0.5">
@@ -2115,36 +2576,51 @@ function FullReportView({ query, onBack, onSlideDeck, language }: { query: strin
                 <div className="px-5 pb-5 border-t border-border pt-4">
                   {i === 0 && (
                     <p className="text-[14px] font-['Plus_Jakarta_Sans'] text-foreground/80 leading-relaxed">
-                      {language === "id"
+                      {summaryText ?? (language === "id"
                         ? `Verdict: peluang layak diuji, bukan langsung ekspansi besar. Bukti mendukung pembukaan kafe spesialti kecil di koridor Dago jika 90 hari pertama dipakai untuk validasi menu, akuisisi komunitas, dan diferensiasi dari jaringan nasional. Skor kelayakan 82/100 didukung ${dataPoints} data points, tetapi asumsi modal awal dan kapasitas tempat masih harus dikunci sebelum keputusan investasi final.`
-                        : `Verdict: the opportunity is worth piloting, not scaling into immediately. Evidence supports opening a small specialty cafe in the Dago corridor if the first 90 days are used for menu validation, community acquisition, and differentiation from national chains. The 82/100 viability score is backed by ${dataPoints} data points, but initial budget and seating capacity assumptions still need to be locked before a final investment decision.`}
+                        : `Verdict: the opportunity is worth piloting, not scaling into immediately. Evidence supports opening a small specialty cafe in the Dago corridor if the first 90 days are used for menu validation, community acquisition, and differentiation from national chains. The 82/100 viability score is backed by ${dataPoints} data points, but initial budget and seating capacity assumptions still need to be locked before a final investment decision.`)}
                     </p>
                   )}
                   {i === 1 && (
                     <div>
                       <p className="text-[14px] font-['Plus_Jakarta_Sans'] text-foreground/80 leading-relaxed mb-4">
-                        {language === "id"
+                        {viewModel?.narrative || summaryText || (language === "id"
                           ? "Situasi pasar saat ini menunjukkan pertumbuhan permintaan yang konsisten. Tren work-from-café pasca pandemi belum mencapai titik jenuh, dan segmen premium masih underserved."
-                          : "The current market shows consistent demand growth. The post-pandemic work-from-cafe trend hasn't reached saturation yet, and the premium segment remains underserved."}
+                          : "The current market shows consistent demand growth. The post-pandemic work-from-cafe trend hasn't reached saturation yet, and the premium segment remains underserved.")}
                       </p>
-                      <ResponsiveContainer width="100%" height={200}>
-                        <LineChart data={r.sentimentTrend}>
-                          <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: "JetBrains Mono" }} />
-                          <YAxis tick={{ fontSize: 11, fontFamily: "JetBrains Mono" }} />
-                          <Tooltip contentStyle={{ fontSize: 12, fontFamily: "Manrope", borderRadius: 8 }} />
-                          <Line type="monotone" dataKey="pos" stroke="#2F735F" strokeWidth={2} name={`${SENTIMENT_LABEL[language].positive} %`} />
-                          <Line type="monotone" dataKey="neg" stroke="#A23F2F" strokeWidth={2} name={`${SENTIMENT_LABEL[language].negative} %`} />
-                        </LineChart>
-                      </ResponsiveContainer>
+                      {viewModel && viewModel.marketInsights.length > 0 && (
+                        <ul className="mb-4 space-y-1.5">
+                          {viewModel.marketInsights.map((insight, idx) => (
+                            <li key={idx} className="flex items-start gap-1.5 text-[13px] font-['Plus_Jakarta_Sans'] text-foreground/80">
+                              <span className="mt-0.5 shrink-0 opacity-40">·</span>{insight}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {r.sentimentTrend.length > 0 && (
+                        <ResponsiveContainer width="100%" height={200}>
+                          <LineChart data={r.sentimentTrend}>
+                            <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: "JetBrains Mono" }} />
+                            <YAxis tick={{ fontSize: 11, fontFamily: "JetBrains Mono" }} />
+                            <Tooltip contentStyle={{ fontSize: 12, fontFamily: "Manrope", borderRadius: 8 }} />
+                            <Line type="monotone" dataKey="pos" stroke="#2F735F" strokeWidth={2} name={`${SENTIMENT_LABEL[language].positive} %`} />
+                            <Line type="monotone" dataKey="neg" stroke="#A23F2F" strokeWidth={2} name={`${SENTIMENT_LABEL[language].negative} %`} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      )}
                     </div>
                   )}
                   {i === 2 && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <p className="text-[13px] font-['Plus_Jakarta_Sans'] text-foreground/80 leading-relaxed mb-3">
-                          {language === "id"
-                            ? "Dari 847 ulasan yang dikumpulkan, sentimen positif mendominasi di 71%, dengan driver utama: kualitas kopi, ambience, dan value for money."
-                            : "Of the 847 reviews collected, positive sentiment dominates at 71%, driven mainly by coffee quality, ambience, and value for money."}
+                          {viewModel
+                            ? (language === "id"
+                                ? `Dari ${viewModel.sentimentSampleTotal || "beberapa"} sinyal yang dikumpulkan${viewModel.sentimentSources.length ? ` dari ${viewModel.sentimentSources.join(", ")}` : ""}, sentimen positif mendominasi di ${r.sentimentPos}%.`
+                                : `Of the ${viewModel.sentimentSampleTotal || "several"} signals collected${viewModel.sentimentSources.length ? ` from ${viewModel.sentimentSources.join(", ")}` : ""}, positive sentiment dominates at ${r.sentimentPos}%.`)
+                            : (language === "id"
+                                ? "Dari 847 ulasan yang dikumpulkan, sentimen positif mendominasi di 71%, dengan driver utama: kualitas kopi, ambience, dan value for money."
+                                : "Of the 847 reviews collected, positive sentiment dominates at 71%, driven mainly by coffee quality, ambience, and value for money.")}
                         </p>
                         <ResponsiveContainer width="100%" height={160}>
                           <PieChart>
@@ -2155,17 +2631,32 @@ function FullReportView({ query, onBack, onSlideDeck, language }: { query: strin
                           </PieChart>
                         </ResponsiveContainer>
                       </div>
-                      <div>
-                        <p className="text-[11px] font-bold text-muted-foreground font-['Plus_Jakarta_Sans'] uppercase tracking-wide mb-3">{copy.distributionPerPlatform}</p>
-                        <ResponsiveContainer width="100%" height={160}>
-                          <BarChart data={[{ p: "Google Maps", n: 312 }, { p: "Instagram", n: 284 }, { p: "TripAdvisor", n: 142 }, { p: "Twitter/X", n: 109 }]}>
-                            <XAxis dataKey="p" tick={{ fontSize: 10, fontFamily: "JetBrains Mono" }} />
-                            <YAxis tick={{ fontSize: 10, fontFamily: "JetBrains Mono" }} />
-                            <Tooltip contentStyle={{ fontSize: 11, fontFamily: "Manrope", borderRadius: 8 }} />
-                            <Bar dataKey="n" fill="var(--primary)" radius={[4, 4, 0, 0]} name={copy.reviewsSeries} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
+                      {viewModel ? (
+                        <div>
+                          <p className="text-[11px] font-bold text-muted-foreground font-['Plus_Jakarta_Sans'] uppercase tracking-wide mb-3">{language === "id" ? "Sumber Data" : "Data Sources"}</p>
+                          {viewModel.sentimentSources.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              {viewModel.sentimentSources.map((src) => (
+                                <span key={src} className="rounded-full border border-border bg-background px-3 py-1.5 text-[12px] font-['Plus_Jakarta_Sans'] text-foreground">{src}</span>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-[12px] text-muted-foreground font-['Plus_Jakarta_Sans']">{language === "id" ? "Tidak ada sumber sentimen tercatat." : "No sentiment sources recorded."}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="text-[11px] font-bold text-muted-foreground font-['Plus_Jakarta_Sans'] uppercase tracking-wide mb-3">{copy.distributionPerPlatform}</p>
+                          <ResponsiveContainer width="100%" height={160}>
+                            <BarChart data={[{ p: "Google Maps", n: 312 }, { p: "Instagram", n: 284 }, { p: "TripAdvisor", n: 142 }, { p: "Twitter/X", n: 109 }]}>
+                              <XAxis dataKey="p" tick={{ fontSize: 10, fontFamily: "JetBrains Mono" }} />
+                              <YAxis tick={{ fontSize: 10, fontFamily: "JetBrains Mono" }} />
+                              <Tooltip contentStyle={{ fontSize: 11, fontFamily: "Manrope", borderRadius: 8 }} />
+                              <Bar dataKey="n" fill="var(--primary)" radius={[4, 4, 0, 0]} name={copy.reviewsSeries} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
                     </div>
                   )}
                   {i === 3 && (
@@ -2277,7 +2768,28 @@ function FullReportView({ query, onBack, onSlideDeck, language }: { query: strin
                   )}
                   {i === 8 && (
                     <div className="text-[13px] font-['Plus_Jakarta_Sans'] text-foreground/80 leading-relaxed space-y-2">
-                      {language === "id" ? (
+                      {viewModel ? (
+                        <>
+                          <p>{language === "id"
+                            ? "Data dikumpulkan melalui pipeline scraping real-time, lalu dianalisis oleh dua model Fireworks AI yang berjalan di atas AMD MI300X GPU: gpt-oss-120b untuk klasifikasi sentimen per ulasan, dan deepseek-v4-pro untuk sintesis SWOT dan ringkasan eksekutif."
+                            : "Data was collected through a real-time scraping pipeline, then analyzed by two Fireworks AI models running on AMD MI300X GPUs: gpt-oss-120b for per-review sentiment classification, and deepseek-v4-pro for SWOT synthesis and the executive summary."}</p>
+                          <p>{viewModel.sentimentSources.length > 0
+                            ? (language === "id"
+                                ? `Sumber sentimen yang berhasil diambil: ${viewModel.sentimentSources.join(", ")}.`
+                                : `Sentiment sources successfully retrieved: ${viewModel.sentimentSources.join(", ")}.`)
+                            : (language === "id"
+                                ? "Tidak ada sumber sentimen yang berhasil diambil untuk laporan ini."
+                                : "No sentiment sources were successfully retrieved for this report.")}</p>
+                          <p>{language === "id"
+                            ? "Skor kelayakan pasar dan tingkat kepercayaan dihitung secara kuantitatif dari jumlah sumber, tingkat kesepakatan antar-sumber, dan kebaruan data -- bukan dihasilkan langsung oleh LLM."
+                            : "The viability score and confidence levels are computed quantitatively from source count, cross-source agreement, and data recency -- not generated directly by the LLM."}</p>
+                          {viewModel.degradationNotes.length > 0 && (
+                            <p className="text-warning">{language === "id"
+                              ? `Catatan: ${viewModel.degradationNotes.length} sumber gagal diambil untuk laporan ini (lihat catatan degradasi di bagian atas).`
+                              : `Note: ${viewModel.degradationNotes.length} source(s) failed to be retrieved for this report (see the degradation notice above).`}</p>
+                          )}
+                        </>
+                      ) : language === "id" ? (
                         <>
                           <p>Data dikumpulkan melalui pipeline 4-agen AI yang berjalan di atas AMD MI300X GPU (192 GB HBM3) menggunakan model Qwen3-235B.</p>
                           <p>Sumber data: Google Maps, TripAdvisor, Instagram, Twitter/X, Tokopedia, media berita lokal, dan laporan BPS Jawa Barat 2026.</p>
@@ -2305,11 +2817,14 @@ function FullReportView({ query, onBack, onSlideDeck, language }: { query: strin
 // ─── Slide deck ───────────────────────────────────────────────────────────────
 const TOTAL_SLIDES = 10;
 
-function SlideDeckView({ query, onBack, onFullReport, language }: { query: string; onBack: () => void; onFullReport: () => void; language: Language }) {
+function SlideDeckView({ query, onBack, onFullReport, language, viewModel }: {
+  query: string; onBack: () => void; onFullReport: () => void; language: Language;
+  viewModel?: ReportViewModel | null;
+}) {
   const copy = UI_COPY[language];
   const [slide, setSlide] = useState(0);
-  const r = REPORT_DATA[language];
-  const dataPoints = language === "id" ? "2.847" : "2,847";
+  const r = viewModel ?? REPORT_DATA[language];
+  const dataPoints = viewModel ? String(viewModel.competitors.length) : (language === "id" ? "2.847" : "2,847");
   const id = language === "id";
 
   const sentPie = [
@@ -2578,7 +3093,7 @@ function SlideDeckView({ query, onBack, onFullReport, language }: { query: strin
   return (
     <div className="min-h-[100dvh] bg-[#0D1015] flex flex-col">
       {/* Deck header */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-white/5">
+      <div className="flex items-center justify-between px-6 py-3 border-b border-white/5 print:hidden">
         <button onClick={onBack} className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-[13px] font-['Plus_Jakarta_Sans']">
           <ChevronLeft size={16} /> {copy.backToReport}
         </button>
@@ -2587,16 +3102,16 @@ function SlideDeckView({ query, onBack, onFullReport, language }: { query: strin
           <button onClick={onFullReport} className="px-3 py-1.5 rounded-lg bg-white/10 text-white/60 hover:text-white hover:bg-white/15 transition-all text-[12px] font-['Plus_Jakarta_Sans']">
             {copy.fullReport}
           </button>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-[12px] font-['Plus_Jakarta_Sans'] font-medium hover:bg-primary transition-all">
+          <button onClick={() => window.print()} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-[12px] font-['Plus_Jakarta_Sans'] font-medium hover:bg-primary transition-all">
             <Download size={13} /> {copy.exportBtn}
           </button>
         </div>
       </div>
 
       {/* Slide thumbnails */}
-      <div className="hidden md:flex items-center gap-1.5 px-6 py-2 overflow-x-auto border-b border-white/5">
+      <div className="hidden md:flex items-center gap-1.5 px-6 py-2 overflow-x-auto border-b border-white/5 print:hidden">
         {SLIDES.map((_, i) => (
-          <button key={i} onClick={() => setSlide(i)}
+          <button key={i} onClick={() => setSlide(i)} aria-label={`${language === "id" ? "Buka slide" : "Open slide"} ${i + 1}`} aria-current={i === slide || undefined}
             className={cn("shrink-0 w-10 h-6 rounded text-[10px] font-mono transition-all",
               i === slide ? "bg-primary text-primary-foreground" : "bg-white/10 text-white/40 hover:bg-white/20 hover:text-white/70")}>
             {i + 1}
@@ -2604,8 +3119,11 @@ function SlideDeckView({ query, onBack, onFullReport, language }: { query: strin
         ))}
       </div>
 
-      {/* Slide area */}
-      <div className="flex-1 flex items-center justify-center p-4 md:p-8">
+      {/* Slide area -- on-screen only. Only the active slide is mounted in
+          the DOM here (SLIDES[slide]), so printing this as-is would only
+          export one slide; the print-only block below renders the full deck
+          instead. */}
+      <div className="flex-1 flex items-center justify-center p-4 md:p-8 print:hidden">
         <div className="w-full max-w-5xl" style={{ aspectRatio: "16/9" }}>
           <div className="w-full h-full rounded-2xl overflow-hidden shadow-2xl">
             {SLIDES[slide]}
@@ -2614,57 +3132,59 @@ function SlideDeckView({ query, onBack, onFullReport, language }: { query: strin
       </div>
 
       {/* Navigation */}
-      <div className="flex items-center justify-center gap-4 py-4 border-t border-white/5">
-        <button onClick={() => setSlide(Math.max(0, slide - 1))} disabled={slide === 0}
+      <div className="flex items-center justify-center gap-4 py-4 border-t border-white/5 print:hidden">
+        <button onClick={() => setSlide(Math.max(0, slide - 1))} disabled={slide === 0} aria-label={copy.prevSlide}
           className="w-10 h-10 rounded-xl bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
           <ChevronLeft size={18} />
         </button>
         <div className="flex gap-1.5">
           {SLIDES.map((_, i) => (
-            <button key={i} onClick={() => setSlide(i)}
+            <button key={i} onClick={() => setSlide(i)} aria-label={`${language === "id" ? "Buka slide" : "Open slide"} ${i + 1}`} aria-current={i === slide || undefined}
               className={cn("w-1.5 h-1.5 rounded-full transition-all", i === slide ? "w-5 bg-primary" : "bg-white/25 hover:bg-white/50")} />
           ))}
         </div>
-        <button onClick={() => setSlide(Math.min(TOTAL_SLIDES - 1, slide + 1))} disabled={slide === TOTAL_SLIDES - 1}
+        <button onClick={() => setSlide(Math.min(TOTAL_SLIDES - 1, slide + 1))} disabled={slide === TOTAL_SLIDES - 1} aria-label={copy.nextSlide}
           className="w-10 h-10 rounded-xl bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
           <ChevronRight size={18} />
         </button>
+      </div>
+
+      {/* Print-only: the whole deck, one slide per page, instead of just
+          whichever single slide happened to be on screen. */}
+      <div className="hidden print:block">
+        {SLIDES.map((slideContent, i) => (
+          <div key={i} style={{ aspectRatio: "16/9", breakAfter: i < SLIDES.length - 1 ? "page" : "auto" }}>
+            {slideContent}
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
 // ─── History ─────────────────────────────────────────────────────────────────
-const HISTORY_DATA_SHARED = [
-  { id: 1, time: "14:22", score: 82, sentiment: "positive" as SentimentTag },
-  { id: 2, time: "09:15", score: 74, sentiment: "neutral" as SentimentTag },
-  { id: 3, time: "16:48", score: 68, sentiment: "positive" as SentimentTag },
-  { id: 4, time: "11:30", score: 77, sentiment: "positive" as SentimentTag },
-  { id: 5, time: "08:05", score: 65, sentiment: "negative" as SentimentTag },
-];
-
-const HISTORY_DATA: Record<Language, { id: number; topic: string; date: string; time: string; score: number; sentiment: SentimentTag; tag: string }[]> = {
-  id: [
-    { ...HISTORY_DATA_SHARED[0], topic: "Kafe Spesialti di Area Dago, Bandung", date: "8 Jul 2026", tag: "F&B" },
-    { ...HISTORY_DATA_SHARED[1], topic: "Minimarket Lokal di Depok Timur", date: "7 Jul 2026", tag: "Retail" },
-    { ...HISTORY_DATA_SHARED[2], topic: "Laundry Kiloan di Bekasi Barat", date: "5 Jul 2026", tag: "Jasa" },
-    { ...HISTORY_DATA_SHARED[3], topic: "Warung Makan Padang di Sunter", date: "3 Jul 2026", tag: "F&B" },
-    { ...HISTORY_DATA_SHARED[4], topic: "Toko Baju Online Shopee & TikTok", date: "1 Jul 2026", tag: "E-Commerce" },
-  ],
-  en: [
-    { ...HISTORY_DATA_SHARED[0], topic: "Specialty Cafe in the Dago Area, Bandung", date: "Jul 8, 2026", tag: "F&B" },
-    { ...HISTORY_DATA_SHARED[1], topic: "Local Minimarket in East Depok", date: "Jul 7, 2026", tag: "Retail" },
-    { ...HISTORY_DATA_SHARED[2], topic: "Laundry Service in West Bekasi", date: "Jul 5, 2026", tag: "Services" },
-    { ...HISTORY_DATA_SHARED[3], topic: "Padang Restaurant in Sunter", date: "Jul 3, 2026", tag: "F&B" },
-    { ...HISTORY_DATA_SHARED[4], topic: "Online Clothing Store on Shopee & TikTok", date: "Jul 1, 2026", tag: "E-Commerce" },
-  ],
-};
-
-function HistoryView({ onNavigate, onOpenReport, language }: { onNavigate: (s: Screen) => void; onOpenReport: (q: string) => void; language: Language }) {
+function HistoryView({ onNavigate, onOpenReport, language }: { onNavigate: (s: Screen) => void; onOpenReport: (item: HistoryItem) => void; language: Language }) {
   const copy = UI_COPY[language];
   const [search, setSearch] = useState("");
-  const historyData = HISTORY_DATA[language];
-  const filtered = historyData.filter(h => h.topic.toLowerCase().includes(search.toLowerCase()));
+  const [historyData, setHistoryData] = useState<HistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setLoadError(false);
+    api.listAnalyses()
+      .then((summaries) => {
+        if (cancelled) return;
+        setHistoryData(summaries.map((s) => summaryToHistoryItem(s, language)));
+      })
+      .catch(() => { if (!cancelled) setLoadError(true); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [language]);
+
+  const filtered = historyData.filter(h => h.topic.toLowerCase().includes(search.trim().toLowerCase()));
 
   return (
     <div className="relative min-h-full overflow-hidden bg-[#030712] text-white">
@@ -2675,7 +3195,7 @@ function HistoryView({ onNavigate, onOpenReport, language }: { onNavigate: (s: S
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#6EA8D8] font-['Plus_Jakarta_Sans']">{copy.history}</p>
             <h1 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-white font-['Plus_Jakarta_Sans']">{copy.historySavedAnalyses}</h1>
-            <p className="mt-1 text-[12px] text-white/46 font-['Plus_Jakarta_Sans']">{language === "id" ? `${historyData.length} laporan siap dibuka ulang` : `${historyData.length} reports ready to reopen`}</p>
+            <p className="mt-1 text-[12px] text-white/46 font-['Plus_Jakarta_Sans']">{language === "id" ? `${historyData.length} hasil analisis` : `${historyData.length} analyses`}</p>
           </div>
           <button onClick={() => onNavigate("home")} className="flex items-center gap-1.5 rounded-full border border-blue-500/50 bg-gradient-to-t from-blue-500 to-blue-600 px-4 py-2 text-[13px] font-semibold text-white shadow-lg shadow-blue-900/40 transition-all hover:from-blue-400 hover:to-blue-600 font-['Plus_Jakarta_Sans']">
             <FileText size={14} /> {copy.newAnalysisFull}
@@ -2690,6 +3210,24 @@ function HistoryView({ onNavigate, onOpenReport, language }: { onNavigate: (s: S
           </div>
         </div>
 
+        {loading && (
+          <div className="flex items-center justify-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.055] py-16 text-[13px] text-white/55 font-['Plus_Jakarta_Sans']">
+            <RefreshCw size={15} className="animate-spin" /> {copy.historyLoading}
+          </div>
+        )}
+        {!loading && loadError && (
+          <div className="rounded-2xl border border-red-500/25 bg-red-500/10 py-10 text-center text-[13px] text-red-200 font-['Plus_Jakarta_Sans']">
+            {copy.historyLoadError}
+          </div>
+        )}
+        {!loading && !loadError && historyData.length === 0 && (
+          <div className="rounded-2xl border border-white/10 bg-white/[0.055] py-16 text-center font-['Plus_Jakarta_Sans']">
+            <p className="text-[14px] font-semibold text-white">{copy.historyEmpty}</p>
+            <p className="mt-1 text-[12px] text-white/45">{copy.historyEmptyDesc}</p>
+          </div>
+        )}
+        {!loading && !loadError && historyData.length > 0 && (
+        <>
         {/* Desktop table */}
         <div className="hidden md:block overflow-hidden rounded-2xl border border-white/10 bg-white/[0.055] shadow-[0_22px_90px_rgba(0,0,0,0.25)]">
           <table className="w-full text-[13px] font-['Plus_Jakarta_Sans']">
@@ -2701,64 +3239,86 @@ function HistoryView({ onNavigate, onOpenReport, language }: { onNavigate: (s: S
               </tr>
             </thead>
             <tbody>
-              {filtered.map((item) => (
-                <tr key={item.id} className="border-t border-white/10 hover:bg-white/[0.055] transition-colors cursor-pointer" onClick={() => onOpenReport(item.topic)}>
+              {filtered.map((item) => {
+                const clickable = item.status !== "failed";
+                return (
+                <tr key={item.analysisId} className={cn("border-t border-white/10 transition-colors", clickable ? "hover:bg-white/[0.055] cursor-pointer" : "opacity-50")} onClick={clickable ? () => onOpenReport(item) : undefined}>
                   <td className="px-5 py-3.5 font-medium text-white max-w-xs">
                     <span className="truncate block">{item.topic}</span>
                   </td>
                   <td className="px-5 py-3.5 text-white/48 whitespace-nowrap">
                     <span className="font-mono">{item.date}</span>
-                    <span className="text-muted-foreground/50 ml-1.5">{item.time}</span>
+                    <span className="text-muted-foreground/50 ml-1.5">· {item.time}</span>
                   </td>
                   <td className="px-5 py-3.5">
                     <span className="px-2 py-0.5 rounded-md bg-white/8 text-[11px] font-medium text-white/50">{item.tag}</span>
                   </td>
                   <td className="px-5 py-3.5">
-                    <span className={cn("text-[12px] font-semibold", item.sentiment === "positive" ? "text-emerald-600" : item.sentiment === "negative" ? "text-red-600" : "text-amber-600")}>
-                      {SENTIMENT_LABEL[language][item.sentiment]}
-                    </span>
+                    {item.sentiment ? (
+                      <span className={cn("text-[12px] font-semibold", item.sentiment === "positive" ? "text-emerald-600" : item.sentiment === "negative" ? "text-red-600" : "text-amber-600")}>
+                        {SENTIMENT_LABEL[language][item.sentiment]}
+                      </span>
+                    ) : (
+                      <span className="text-[12px] font-medium text-white/40">{item.status === "failed" ? "-" : copy.historyInProgress}</span>
+                    )}
                   </td>
                   <td className="px-5 py-3.5">
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                        <div className="h-full bg-primary rounded-full" style={{ width: `${item.score}%` }} />
+                    {item.score !== null ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                          <div className="h-full bg-primary rounded-full" style={{ width: `${item.score}%` }} />
+                        </div>
+                        <span className="font-mono text-white font-medium">{item.score}</span>
                       </div>
-                      <span className="font-mono text-white font-medium">{item.score}</span>
-                    </div>
+                    ) : <span className="text-white/40">-</span>}
                   </td>
                   <td className="px-5 py-3.5">
-                    <button className="px-3 py-1 rounded-lg border border-white/10 text-[12px] font-medium text-white/70 hover:bg-white/8 transition-all">
-                      {copy.historyOpen} →
-                    </button>
+                    {clickable && (
+                      <button className="px-3 py-1 rounded-lg border border-white/10 text-[12px] font-medium text-white/70 hover:bg-white/8 transition-all">
+                        {copy.historyOpen} →
+                      </button>
+                    )}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
 
         {/* Mobile card list */}
         <div className="md:hidden space-y-3">
-          {filtered.map((item) => (
-            <button key={item.id} onClick={() => onOpenReport(item.topic)}
-              className="w-full rounded-2xl border border-white/10 bg-white/[0.055] p-4 text-left transition-all hover:border-blue-400/50 hover:bg-white/[0.075]">
+          {filtered.map((item) => {
+            const clickable = item.status !== "failed";
+            return (
+            <button key={item.analysisId} onClick={clickable ? () => onOpenReport(item) : undefined} disabled={!clickable}
+              className={cn("w-full rounded-2xl border border-white/10 bg-white/[0.055] p-4 text-left transition-all", clickable ? "hover:border-blue-400/50 hover:bg-white/[0.075]" : "opacity-50")}>
               <div className="flex items-start justify-between gap-2 mb-2">
                 <span className="px-2 py-0.5 rounded bg-white/8 text-[11px] font-medium text-white/50">{item.tag}</span>
                 <span className="text-[11px] font-mono text-white/45 shrink-0">{item.date}</span>
               </div>
               <p className="text-[14px] font-semibold font-['Plus_Jakarta_Sans'] text-white mb-2 leading-snug">{item.topic}</p>
               <div className="flex items-center justify-between">
-                <span className={cn("text-[12px] font-semibold", item.sentiment === "positive" ? "text-emerald-600" : item.sentiment === "negative" ? "text-red-600" : "text-amber-600")}>{SENTIMENT_LABEL[language][item.sentiment]}</span>
-                <div className="flex items-center gap-2">
-                  <div className="w-14 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-primary rounded-full" style={{ width: `${item.score}%` }} />
+                {item.sentiment ? (
+                  <span className={cn("text-[12px] font-semibold", item.sentiment === "positive" ? "text-emerald-600" : item.sentiment === "negative" ? "text-red-600" : "text-amber-600")}>{SENTIMENT_LABEL[language][item.sentiment]}</span>
+                ) : (
+                  <span className="text-[12px] font-medium text-white/40">{item.status === "failed" ? "-" : copy.historyInProgress}</span>
+                )}
+                {item.score !== null ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-14 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-full bg-primary rounded-full" style={{ width: `${item.score}%` }} />
+                    </div>
+                    <span className="text-[12px] font-mono text-white font-medium">{item.score}</span>
                   </div>
-                  <span className="text-[12px] font-mono text-white font-medium">{item.score}</span>
-                </div>
+                ) : <span className="text-[12px] text-white/40">-</span>}
               </div>
             </button>
-          ))}
+            );
+          })}
         </div>
+        </>
+        )}
       </div>
     </div>
   );
@@ -2790,6 +3350,13 @@ const TIERS = [
 function AccountView({ mode = "account", onLogout, language, onLanguageChange, theme, onThemeChange }: { mode?: "account" | "subscription"; onLogout: () => void; language: Language; onLanguageChange: (l: Language) => void; theme: ThemeMode; onThemeChange: (t: ThemeMode) => void }) {
   const [billing, setBilling] = useState<"monthly" | "yearly">("yearly");
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const [pricingNotice, setPricingNotice] = useState(false);
+  // No real payment processor exists in this prototype -- rather than a
+  // no-op click, tell the user honestly instead of pretending to upgrade.
+  const showPricingNotice = () => {
+    setPricingNotice(true);
+    window.setTimeout(() => setPricingNotice(false), 3000);
+  };
   const ThemeIcon = theme === "dark" ? Moon : Sun;
   const saveSettings = () => {
     if (saveState !== "idle") return;
@@ -2956,6 +3523,7 @@ function AccountView({ mode = "account", onLogout, language, onLanguageChange, t
                       </div>
 
                       <button
+                        onClick={active ? undefined : showPricingNotice}
                         className={cn(`mb-7 h-12 w-full rounded-xl px-4 text-[14px] font-semibold transition-all duration-200 active:scale-[0.98] ${JK} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70`,
                           active ? "cursor-default border border-white/10 bg-white/8 text-white/42" :
                           isPro ? "border border-blue-500 bg-gradient-to-t from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-900/60 hover:from-blue-400 hover:to-blue-600" :
@@ -2979,6 +3547,12 @@ function AccountView({ mode = "account", onLogout, language, onLanguageChange, t
               })}
             </div>
 
+            {pricingNotice && (
+              <div role="status" className="mb-5 flex items-center justify-center gap-2 rounded-full border border-blue-400/30 bg-blue-500/12 px-4 py-2.5 text-center text-[12px] font-medium text-blue-100">
+                {language === "id" ? "Pembayaran belum tersedia di prototype ini." : "Payment isn't available in this prototype yet."}
+              </div>
+            )}
+
             <div className="mt-5 grid gap-2 text-center sm:grid-cols-3">
               <p className={`rounded-full border border-white/8 bg-white/[0.035] px-3 py-2 text-[12px] text-white/42 ${JK}`}>Batal kapan saja.</p>
               <p className={`rounded-full border border-white/8 bg-white/[0.035] px-3 py-2 text-[12px] text-white/42 ${JK}`}>Data tetap milik Anda.</p>
@@ -2997,6 +3571,9 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>("splash");
   const [query, setQuery] = useState("");
   const [analysisCount, setAnalysisCount] = useState(() => frontendAdapter.getUsage().used);
+  const [analysisId, setAnalysisId] = useState<string | null>(null);
+  const [report, setReport] = useState<Report | null>(null);
+  const [reportFetchError, setReportFetchError] = useState<string | null>(null);
   const [theme, setTheme] = useState<ThemeMode>(() => {
     const saved = localStorage.getItem("consultin-theme");
     if (saved === "light" || saved === "dark") return saved;
@@ -3035,18 +3612,59 @@ export default function App() {
     setScreen("briefreview");
   };
 
-  const confirmAnalysis = (extraContext = "") => {
-    const fullQuery = extraContext ? `${query || REPORT_DATA[language].topic}\n\n${language === "id" ? "Informasi tambahan dari user" : "Additional context from user"}:\n${extraContext}` : (query || REPORT_DATA[language].topic);
-    const analysis = frontendAdapter.createAnalysis(fullQuery);
-
-    setQuery(analysis.topic);
+  const confirmAnalysis = async (answers: Record<string, string> = {}) => {
+    const topic = query || REPORT_DATA[language].topic;
+    setQuery(topic);
+    setReport(null);
+    setReportFetchError(null);
+    setAnalysisId(null);
+    // Quota display stays on the mock adapter (no real backend quota concept
+    // yet) -- the real analysis flow below is entirely separate.
+    frontendAdapter.createAnalysis(topic);
     setAnalysisCount(frontendAdapter.getUsage().used);
+    setScreen("processing");
+    try {
+      const input = buildBusinessInput(topic, answers, language);
+      const created = await api.createAnalysis(input);
+      await api.confirmAnalysis(created.analysis_id);
+      setAnalysisId(created.analysis_id);
+    } catch (err) {
+      setReportFetchError(err instanceof ApiError ? err.message : String(err));
+    }
+  };
+
+  // Opens a past analysis from Home's "recent analyses" or the History
+  // screen. Ready analyses fetch their real report; still-running ones
+  // resume the processing screen's poll instead of losing the job; failed
+  // ones have no report to show, so they're not clickable (see the two
+  // views' isReady/status checks around the onClick handlers).
+  const openReport = (item: HistoryItem) => {
+    if (item.status === "failed") return;
+    setQuery(item.topic);
+    setAnalysisId(item.analysisId);
+    setReport(null);
+    setReportFetchError(null);
+    if (item.isReady) {
+      setScreen("report");
+      api.getReport(item.analysisId)
+        .then(setReport)
+        .catch((err) => setReportFetchError(err instanceof ApiError ? err.message : String(err)));
+      return;
+    }
     setScreen("processing");
   };
 
-  const openReport = (q: string) => {
-    setQuery(q);
-    setScreen("report");
+  const viewModel = report ? reportToViewModel(report, language, query || REPORT_DATA[language].topic) : null;
+
+  const handleProcessingComplete = async () => {
+    if (!analysisId) return;
+    try {
+      const rep = await api.getReport(analysisId);
+      setReport(rep);
+      navigate("report");
+    } catch (err) {
+      setReportFetchError(err instanceof ApiError ? err.message : String(err));
+    }
   };
 
   // Auth screens (full-page, no app shell)
@@ -3061,6 +3679,7 @@ export default function App() {
         onBack={() => navigate("report")}
         onFullReport={() => navigate("fullreport")}
         language={language}
+        viewModel={viewModel}
       />
     );
   }
@@ -3083,9 +3702,9 @@ export default function App() {
     <AppShell screen={screen} onNavigate={navigate} analysisCount={analysisCount} language={language} onLanguageChange={setLanguage} theme={theme} onThemeChange={setTheme}>
       {screen === "home" && <HomeView onSubmit={handleQuery} onOpenReport={openReport} analysisCount={analysisCount} language={language} />}
       {screen === "briefreview" && <BriefReviewView query={query} onConfirm={confirmAnalysis} onBack={() => navigate("home")} language={language} />}
-      {screen === "processing" && <ProcessingView query={query} onComplete={() => navigate("report")} language={language} />}
-      {screen === "report" && <ReportView query={query} onBack={() => navigate("home")} onNavigate={navigate} language={language} />}
-      {screen === "fullreport" && <FullReportView query={query || REPORT_DATA[language].topic} onBack={() => navigate("report")} onSlideDeck={() => navigate("slidedeck")} language={language} />}
+      {screen === "processing" && <ProcessingView query={query} onComplete={handleProcessingComplete} onRetry={() => navigate("briefreview")} onCancel={() => navigate("home")} language={language} analysisId={analysisId} submitError={reportFetchError} />}
+      {screen === "report" && <ReportView query={query} onBack={() => navigate("home")} onNavigate={navigate} language={language} viewModel={viewModel} />}
+      {screen === "fullreport" && <FullReportView query={query || REPORT_DATA[language].topic} onBack={() => navigate("report")} onSlideDeck={() => navigate("slidedeck")} language={language} viewModel={viewModel} />}
       {screen === "history" && <HistoryView onNavigate={navigate} onOpenReport={openReport} language={language} />}
       {screen === "subscription" && <AccountView mode="subscription" onLogout={() => { frontendAdapter.signOut(); navigate("login"); }} language={language} onLanguageChange={setLanguage} theme={theme} onThemeChange={setTheme} />}
       {screen === "account" && <AccountView mode="account" onLogout={() => { frontendAdapter.signOut(); navigate("login"); }} language={language} onLanguageChange={setLanguage} theme={theme} onThemeChange={setTheme} />}

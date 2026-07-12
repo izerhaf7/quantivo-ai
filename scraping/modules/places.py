@@ -20,6 +20,7 @@ from tenacity import (
 )
 
 from contracts import (
+    GeoPoint,
     RawDataItem,
     ScopeConfig,
     SourceType,
@@ -32,6 +33,37 @@ logger = logging.getLogger(__name__)
 PLACES_BASE = "https://maps.googleapis.com/maps/api/place"
 NEARBY_SEARCH = f"{PLACES_BASE}/nearbysearch/json"
 PLACE_DETAILS = f"{PLACES_BASE}/details/json"
+
+# Nearby Search requires a lat/lng center and BusinessInput.location has no
+# coordinates field filled by the frontend (city name only) -- without this,
+# every search silently fell back to a single hardcoded Jakarta point
+# regardless of the requested city, returning wrong-city competitors. Covers
+# the major cities likely to show up in a hackathon demo; genuinely unknown
+# cities still fall back to the Jakarta center (better than crashing).
+_CITY_COORDS: dict[str, tuple[float, float]] = {
+    "jakarta": (-6.2088, 106.8456),
+    "bandung": (-6.9175, 107.6191),
+    "depok": (-6.4025, 106.7942),
+    "bekasi": (-6.2383, 106.9756),
+    "surabaya": (-7.2575, 112.7521),
+    "medan": (3.5952, 98.6722),
+    "semarang": (-6.9932, 110.4203),
+    "yogyakarta": (-7.7956, 110.3695),
+    "makassar": (-5.1477, 119.4327),
+    "denpasar": (-8.6705, 115.2126),
+    "palembang": (-2.9761, 104.7754),
+    "tangerang": (-6.1783, 106.6319),
+    "bogor": (-6.5971, 106.8060),
+}
+
+
+def _resolve_coordinates(location: Location) -> tuple[float, float]:
+    if location.coordinates:
+        return location.coordinates.lat, location.coordinates.lng
+    for field in (location.district, location.city):
+        if field and field.strip().lower() in _CITY_COORDS:
+            return _CITY_COORDS[field.strip().lower()]
+    return _CITY_COORDS["jakarta"]
 
 
 class PlacesModule:
@@ -117,8 +149,7 @@ class PlacesModule:
         location = inp.location
 
         # Build location bias
-        lat = location.coordinates.lat if location.coordinates else -6.2
-        lng = location.coordinates.lng if location.coordinates else 106.8
+        lat, lng = _resolve_coordinates(location)
         location_bias = f"circle:{inp.radius_km * 1000}@{lat},{lng}"
 
         # Use business_type + category for keyword
@@ -165,7 +196,7 @@ class PlacesModule:
                         city=location.city,
                         district=location.district,
                         province=location.province,
-                        coordinates=Location.Coordinates(lat=lat, lng=lng) if lat and lng else None,
+                        coordinates=GeoPoint(lat=lat, lng=lng) if lat and lng else None,
                     ),
                     place_id=place_id,
                     rating_aggregate=place.get("rating"),

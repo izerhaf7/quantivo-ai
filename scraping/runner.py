@@ -17,6 +17,14 @@ from contracts.interfaces import ScraperModule
 
 logger = logging.getLogger(__name__)
 
+# Per-module fetch budget. Single source of truth for both the actual
+# asyncio.wait_for() call below and the degradation-note text -- previously
+# the timeout was hardcoded to 180.0 here but the timeout-note message had a
+# stale "60s" string left over from an earlier value, so a report's
+# degradation_notes would claim a module timed out after 60s when it had
+# actually been given a full 180s.
+MODULE_TIMEOUT_SECONDS = 180.0
+
 
 @dataclass(frozen=True, slots=True)
 class ScraperResult:
@@ -128,10 +136,9 @@ class ScraperRunner:
         """Run a single module with circuit-breaker and timeout."""
         async with semaphore:
             try:
-                # Add timeout per module (30s default)
                 items = await asyncio.wait_for(
                     module.fetch(scope),
-                    timeout=180.0,
+                    timeout=MODULE_TIMEOUT_SECONDS,
                 )
 
                 healthy = module.is_healthy()
@@ -151,7 +158,7 @@ class ScraperRunner:
                 )
 
             except asyncio.TimeoutError:
-                note = f"{module.name}: timeout after 60s"
+                note = f"{module.name}: timeout after {MODULE_TIMEOUT_SECONDS:g}s"
                 logger.warning("ScraperRunner: %s", note)
                 return (
                     ModuleStats(

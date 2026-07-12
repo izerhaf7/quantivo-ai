@@ -27,7 +27,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-CONTRACT_VERSION = "1.0.0"
+CONTRACT_VERSION = "1.2.0"
 
 
 def _uid() -> str:
@@ -303,6 +303,13 @@ class Chunk(BaseModel):
     relevance_score: float          # diwarisi dari routing
     recency_score: float            # diwarisi dari routing
 
+    # v1.1.0: diwarisi dari RawDataItem Places (place_id-only persist rule
+    # tetap berlaku). Dipakai SwotAgentImpl utk kompetitor dari data asli,
+    # bukan hasil parse teks LLM -- None utk chunk non-Places.
+    place_id: Optional[str] = None
+    rating_aggregate: Optional[float] = None
+    review_count: Optional[int] = None
+
 
 class RetrievedChunk(BaseModel):
     chunk: Chunk
@@ -437,6 +444,26 @@ class AnalysisStatusResponse(BaseModel):
     error: Optional[str] = None
 
 
+class AnalysisSummary(BaseModel):
+    """Satu baris dalam balasan GET /api/analyses (histori/riwayat).
+
+    Sengaja tidak membawa full Report -- itu tugas GET
+    /api/analyses/{id}/report. Field sentiment_distribution/*_confidence
+    dikirim mentah (bukan skor gabungan) supaya kalkulasi skor UI tetap satu
+    tempat di frontend (reportAdapter.ts), sama seperti report detail penuh.
+    """
+    analysis_id: str
+    business_type: str
+    location: Location
+    category: IndustryCategory
+    status: AnalysisStatus
+    created_at: datetime
+    sentiment_distribution: Optional[dict] = None
+    sentiment_confidence: Optional[float] = None
+    swot_confidence: Optional[float] = None
+    executive_summary: Optional[str] = None
+
+
 # Kumpulan tipe yang diekspor eksplisit (biar rapi saat generate schema).
 __all__ = [
     "CONTRACT_VERSION",
@@ -450,4 +477,5 @@ __all__ = [
     "Competitor", "SWOTResult", "SummaryRequest",
     "Visualizations", "Report",
     "CreateAnalysisResponse", "ProgressStage", "AnalysisStatusResponse",
+    "AnalysisSummary",
 ]

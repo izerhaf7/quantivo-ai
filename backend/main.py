@@ -9,17 +9,26 @@ from __future__ import annotations
 import asyncio
 import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
+from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from contracts import (
     BusinessInput, AnalysisStatus,
-    CreateAnalysisResponse, AnalysisStatusResponse, ProgressStage,
+    CreateAnalysisResponse, AnalysisStatusResponse, AnalysisSummary, ProgressStage,
     Report,
 )
 from orchestrator import OrchestratorImpl
 from store import JobStore
+
+# Explicit path, same convention as ml/llm_demo.py's ROOT_ENV -- always the
+# repo-root .env regardless of CWD/how uvicorn was launched. Orchestrator
+# real-wiring (FireworksLLMClient/FireworksEmbeddingClient/scraping modules)
+# reads os.environ directly and does NOT load .env itself, so without this
+# the real pipeline would silently run with empty API keys.
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 _STAGE_PCT = {
     AnalysisStatus.AWAITING_CONFIRMATION: 0,
@@ -102,6 +111,11 @@ async def confirm_analysis(
     asyncio.create_task(orchestrator.run(job["scope"]))
     job["status"] = AnalysisStatus.CONFIRMED
     return await _status_response(analysis_id, store, job=job)
+
+
+@app.get("/api/analyses", response_model=list[AnalysisSummary])
+async def list_analyses(store: JobStore = Depends(get_store)) -> list[AnalysisSummary]:
+    return await store.list_summaries()
 
 
 @app.get("/api/analyses/{analysis_id}", response_model=AnalysisStatusResponse)

@@ -1,0 +1,49 @@
+# deploy/docker-compose.yml — Redis (job store) + Qdrant (vector DB) for the
+# real backend pipeline. LLM + embeddings are hosted API calls (Fireworks),
+# not containers -- nothing GPU/model-weight related runs on this box.
+# Sized for a small VM (~2 vCPU / 4 GB RAM): both services stay well under
+# their limits at hackathon-demo request volume.
+#
+# Bring up:   docker compose -f deploy/docker-compose.yml up -d
+# Tear down:  docker compose -f deploy/docker-compose.yml down
+# Health:     docker compose -f deploy/docker-compose.yml ps
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis-data:/data
+    command: ["redis-server", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
+    deploy:
+      resources:
+        limits:
+          memory: 192m
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6333:6333"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    deploy:
+      resources:
+        limits:
+          memory: 768m
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:6333/healthz || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  redis-data:
+  qdrant-data:

@@ -28,5 +28,7 @@ def chunks_from_routed(routed: list[RoutedDataItem]) -> list[Chunk]:
                 text=text, source_type=item.source_type, source_name=item.source_name,
                 geo_tag=item.geo_hint, published_at=item.published_at,
                 relevance_score=r.decision.score.relevance_score,
-                recency_score=r.decision.score.recency_score))
+                recency_score=r.decision.score.recency_score,
+                place_id=item.place_id, rating_aggregate=item.rating_aggregate,
+                review_count=item.review_count))
     return chunks

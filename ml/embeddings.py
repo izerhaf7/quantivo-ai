@@ -62,6 +62,44 @@ class TEIEmbeddingClient:
 
 
 # ---------------------------------------------------------------------------
+# PRODUKSI (MVP) — Fireworks embeddings API (hosted, dense-only). Dipakai
+# saat tak ada server BGE-M3 self-host (mis. deploy di box kecil tanpa GPU).
+# Fireworks TIDAK expose BGE-M3 di akun ini (dicek langsung ke /v1/models);
+# model dense-only yang tersedia & terverifikasi jalan: nomic-embed-text-v1.5
+# (768 dim). QdrantRetriever/DataRouter sudah menangani sparse=None dengan
+# baik (retriever.py hanya menambah leg sparse ke prefetch/point kalau ada),
+# jadi retriever tetap search dense-only tanpa perlu ubah kode lain.
+# ---------------------------------------------------------------------------
+class FireworksEmbeddingClient:
+    """Butuh env FIREWORKS_API_KEY. Model override via FIREWORKS_EMBEDDING_MODEL."""
+
+    BASE_URL = "https://api.fireworks.ai/inference/v1/embeddings"
+    dense_dim = 768  # nomic-ai/nomic-embed-text-v1.5
+
+    def __init__(self, model: str | None = None, api_key: str | None = None):
+        self.model = model or os.environ.get(
+            "FIREWORKS_EMBEDDING_MODEL", "nomic-ai/nomic-embed-text-v1.5")
+        self.api_key = api_key or os.environ.get("FIREWORKS_API_KEY", "")
+
+    async def embed(self, texts: list[str]) -> list[EmbeddingVector]:
+        import httpx  # lokal agar mock tak butuh httpx
+
+        if not texts:
+            return []
+        headers = {"Authorization": f"Bearer {self.api_key}",
+                   "Content-Type": "application/json"}
+        async with httpx.AsyncClient(timeout=30) as cx:
+            r = await cx.post(self.BASE_URL, json={"model": self.model, "input": texts},
+                               headers=headers)
+            r.raise_for_status()
+            data = r.json()["data"]
+        # Fireworks membalas urut sesuai `index`, bukan selalu sesuai urutan
+        # request -- urutkan eksplisit sebelum dipetakan balik ke `texts`.
+        by_index = sorted(data, key=lambda d: d["index"])
+        return [EmbeddingVector(dense=d["embedding"], sparse=None) for d in by_index]
+
+
+# ---------------------------------------------------------------------------
 # DEV LOKAL — BGE-M3 in-process via paket `FlagEmbedding`, tanpa server.
 # Opsional & berat (unduh bobot ~2GB); lazy import supaya tak jadi dependensi
 # wajib proyek. `uv add FlagEmbedding` dulu sebelum dipakai.

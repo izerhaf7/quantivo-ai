@@ -7,6 +7,13 @@ report (JSON or ""), sections_ready (JSON list), error (str or "").
 
 TTL mirrors ScopeConfig.expires_at (48h buffer per spec) and is refreshed on
 every write so an in-flight job doesn't expire mid-pipeline.
+
+A separate sorted set (_INDEX_KEY, score = created_at epoch seconds) tracks
+every scope_id ever created so History/Riwayat can list past analyses --
+without it there is no way to enumerate jobs, only to fetch one by id.
+Trimmed to _INDEX_MAX entries on every create() so it can't grow unbounded;
+entries whose job hash has since expired are lazily pruned in
+list_summaries() instead of tracked with their own TTL.
 """
 from __future__ import annotations
 
@@ -15,7 +22,10 @@ from datetime import datetime, timezone
 
 import redis.asyncio as redis
 
-from contracts import AnalysisStatus, Report, ScopeConfig
+from contracts import AnalysisStatus, AnalysisSummary, Report, ScopeConfig
+
+_INDEX_KEY = "boa:jobs:index"
+_INDEX_MAX = 200
 
 
 def _key(scope_id: str) -> str:
@@ -51,6 +61,8 @@ class JobStore:
             "error": "",
         })
         await self._refresh_ttl(scope.scope_id)
+        await self._redis.zadd(_INDEX_KEY, {scope.scope_id: scope.created_at.timestamp()})
+        await self._redis.zremrangebyrank(_INDEX_KEY, 0, -(_INDEX_MAX + 1))
 
     async def get(self, scope_id: str) -> dict | None:
         data = await self._redis.hgetall(_key(scope_id))
@@ -83,6 +95,45 @@ class JobStore:
     async def set_error(self, scope_id: str, message: str) -> None:
         await self._redis.hset(_key(scope_id), "error", message)
         await self._refresh_ttl(scope_id)
+
+    async def list_summaries(self, limit: int = 50) -> list[AnalysisSummary]:
+        """Most-recent-first summaries for GET /api/analyses (History).
+
+        Reads the index newest-first, skipping (and pruning) any scope_id
+        whose job hash has already expired out of Redis.
+        """
+        scope_ids = await self._redis.zrevrange(_INDEX_KEY, 0, limit - 1)
+        summaries: list[AnalysisSummary] = []
+        for scope_id in scope_ids:
+            job = await self.get(scope_id)
+            if job is None:
+                await self._redis.zrem(_INDEX_KEY, scope_id)
+                continue
+            report = job["report"]
+            sentiment_distribution = None
+            sentiment_confidence = None
+            swot_confidence = None
+            executive_summary = None
+            if report is not None:
+                executive_summary = report.executive_summary or None
+                if report.sentiment is not None:
+                    sentiment_distribution = report.sentiment.overall_distribution
+                    sentiment_confidence = report.sentiment.confidence.score
+                if report.swot is not None:
+                    swot_confidence = report.swot.confidence.score
+            summaries.append(AnalysisSummary(
+                analysis_id=scope_id,
+                business_type=job["scope"].business_input.business_type,
+                location=job["scope"].business_input.location,
+                category=job["scope"].business_input.category,
+                status=job["status"],
+                created_at=job["scope"].created_at,
+                sentiment_distribution=sentiment_distribution,
+                sentiment_confidence=sentiment_confidence,
+                swot_confidence=swot_confidence,
+                executive_summary=executive_summary,
+            ))
+        return summaries
 
     async def _refresh_ttl(self, scope_id: str) -> None:
         expires_raw = await self._redis.hget(_key(scope_id), "expires_at")

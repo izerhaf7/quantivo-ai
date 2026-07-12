@@ -1,0 +1,37 @@
+# deploy/boa-backend.service — systemd unit for the real FastAPI backend.
+#
+# Install:
+#   sudo cp deploy/boa-backend.service /etc/systemd/system/
+#   # edit User=/WorkingDirectory=/ExecStart= paths below to match the
+#   # actual deploy location and username first (see deploy/README.md)
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now boa-backend
+#
+# Logs:    journalctl -u boa-backend -f
+# Restart: sudo systemctl restart boa-backend
+
+[Unit]
+Description=BOA SaaS backend (FastAPI + real agent pipeline)
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/quantivo-ai
+# repo root must be on PYTHONPATH (not just contracts/ml) so `scraping` is
+# importable as a real package -- see backend/orchestrator.py's docstring
+# for why the flat "contracts" dir must NOT come before the repo root.
+Environment=PYTHONPATH=/home/ubuntu/quantivo-ai:/home/ubuntu/quantivo-ai/contracts:/home/ubuntu/quantivo-ai/ml
+EnvironmentFile=/home/ubuntu/quantivo-ai/.env
+ExecStart=/home/ubuntu/.local/bin/uv run uvicorn main:app --app-dir backend --host 127.0.0.1 --port 8000
+Restart=on-failure
+RestartSec=3
+
+# Fire-and-forget in-process background tasks (backend/main.py's
+# asyncio.create_task, see the TODO(arq) comment there) means an in-flight
+# analysis is lost on restart -- known, documented MVP limitation, not a
+# systemd config issue.
+
+[Install]
+WantedBy=multi-user.target

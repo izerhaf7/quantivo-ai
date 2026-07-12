@@ -124,18 +124,22 @@ class SwotAgentImpl:
     ) -> SWOTResult:
         # 1) kompetitor DARI DATA (place_id + rating agregat), bukan karangan LLM.
         competitors, sources, recencies = [], set(), []
-        seen_place = set()
+        seen_place: set[str] = set()
         for rc in chunks:
             c = rc.chunk
             sources.add(c.source_name)
             recencies.append(c.recency_score)
-            meta = c  # chunk mewarisi info; kompetitor asli ada di raw item Places
-            # kita andalkan chunk yang berasal dari places_listing
             if c.source_type.value == "places_listing":
-                pid = None  # place_id sesungguhnya dibawa dari RawDataItem -> chunk.source_item_id
-                # Untuk demo, ambil nama dari teks; produksi: propagasikan place_id/rating
+                # dedup: satu Chunk per track per item Places, jadi place_id
+                # bisa muncul >1x kalau item yg sama juga masuk SENTIMENT.
+                if c.place_id and c.place_id in seen_place:
+                    continue
+                if c.place_id:
+                    seen_place.add(c.place_id)
                 competitors.append(Competitor(
                     name=c.text.split(" - ")[0][:80], category=scope.business_input.category.value,
+                    rating_aggregate=c.rating_aggregate, review_count=c.review_count,
+                    place_id=c.place_id,
                     coordinates=c.geo_tag.coordinates if c.geo_tag else None))
         # 2) 4 kuadran via LLM (reasoning), diberi konteks klien + goals.
         bi = scope.business_input

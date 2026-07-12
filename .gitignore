@@ -7,3 +7,5 @@ node_modules/
 
 # Personal reference notes, not team-facing docs (see ml/README.md for that)
 ml/NOTES.md
+server
+scraping/BRIGHTDATA_FIX.md

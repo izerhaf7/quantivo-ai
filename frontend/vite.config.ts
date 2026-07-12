@@ -33,4 +33,16 @@ export default defineConfig({
 
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
   assetsInclude: ['**/*.svg', '**/*.csv'],
+
+  // Dev only: proxy API calls to the local backend (uvicorn on :8000) so
+  // src/app/api/client.ts's relative fetch("/api/...") works without CORS
+  // during `npm run dev`. Production serves frontend+backend same-origin
+  // behind nginx instead (see deploy/nginx-boa.conf), so this block has no
+  // effect there.
+  server: {
+    proxy: {
+      '/api': 'http://localhost:8000',
+      '/health': 'http://localhost:8000',
+    },
+  },
 })
